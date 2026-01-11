@@ -361,3 +361,11 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# Oracle wallet / local secrets (example)
+wallet/
+*.p12
+*.sso
+
+# User secrets folder if used by team
+secrets.json

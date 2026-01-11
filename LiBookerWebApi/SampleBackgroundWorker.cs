@@ -1,11 +1,6 @@
-using Microsoft.Extensions.Hosting;
 using Microsoft.EntityFrameworkCore;
 using LiBookerWebApi.Model;
-using System.Threading.Tasks;
-using System.Threading;
-using System.Collections.Generic;
 using System.Threading.Tasks.Dataflow;
-using System;
 
 namespace LiBookerWebApi.Services
 {
