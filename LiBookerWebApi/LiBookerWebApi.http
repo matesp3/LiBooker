@@ -1,0 +1,6 @@
+@LiBookerWebApi_HostAddress = http://localhost:5226
+
+GET {{LiBookerWebApi_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
