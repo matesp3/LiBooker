@@ -14,6 +14,7 @@ builder.Services.AddOracleDb(builder.Configuration);
 // register scoped services
 builder.Services.AddScoped<IPersonService, PersonService>();
 
+
 var app = builder.Build();
 
 app.UseHttpsRedirection();

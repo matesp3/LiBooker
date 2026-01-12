@@ -1,6 +1,6 @@
-namespace LiBookerWebApi.Models.DTOs
+namespace LiBooker.Shared.DTOs
 {
-    internal sealed record PersonDto
+    public sealed record PersonDto
     {
         public int Id { get; init; }
         public string? FirstName { get; init; }

@@ -1,4 +1,4 @@
-using LiBookerWebApi.Models.DTOs;
+using LiBooker.Shared.DTOs;
 
 namespace LiBookerWebApi.Services
 {

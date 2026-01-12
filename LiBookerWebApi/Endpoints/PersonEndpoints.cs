@@ -1,7 +1,4 @@
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
 using LiBookerWebApi.Services;
-using LiBookerWebApi.Models.DTOs;
 
 namespace LiBookerWebApi.Endpoints
 {
