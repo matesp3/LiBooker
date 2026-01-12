@@ -1,0 +1,63 @@
+﻿@page "/people"
+@using LiBooker.Shared.DTOs
+@inject LiBooker.Blazor.Client.Services.PersonClient Client
+@implements IDisposable
+
+<h3>People</h3>
+
+@if (isLoading)
+{
+    <p><em>Loading...</em></p>
+}
+else if (!string.IsNullOrEmpty(error))
+{
+    <div class="alert alert-danger">@error</div>
+}
+else if (people is null || people.Count == 0)
+{
+    <p>No people found.</p>
+}
+else
+{
+    <ul>
+        @foreach (var p in people)
+        {
+            <li>@p.FirstName @p.LastName (@p.Email)</li>
+        }
+    </ul>
+}
+
+@code {
+    private List<PersonDto>? people;
+    private bool isLoading;
+    private string? error;
+    private CancellationTokenSource? cts;
+
+    protected override async Task OnInitializedAsync()
+    {
+        cts?.Dispose();
+        cts = new CancellationTokenSource();
+
+        isLoading = true;
+        error = null;
+
+        var result = await Client.GetAllAsync(cts.Token);
+
+        isLoading = false;
+
+        if (result.IsSuccess)
+        {
+            people = result.Data;
+        }
+        else
+        {
+            error = result.Error ?? "Unknown error";
+        }
+    }
+
+    public void Dispose()
+    {
+        cts?.Cancel();
+        cts?.Dispose();
+    }
+}
