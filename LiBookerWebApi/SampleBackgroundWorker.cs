@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Hosting;
 using LiBookerWebApi.Model;
 
 namespace LiBookerWebApi.Services

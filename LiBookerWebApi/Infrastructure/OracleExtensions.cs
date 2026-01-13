@@ -48,8 +48,14 @@ namespace LiBookerWebApi.Infrastructure
                 $"User Id={userId};" +
                 $"Password={password};" +
                 $"Data Source={tnsAlias};" +
-                "Pooling=false;" +
-                "Connection Timeout=60;";
+                "Pooling=true;" +               // Enabling pooling (made 5% difference in tests for second request)
+                "Min Pool Size=2;" +            // Keep 2 connections always open (warm pool)
+                "Max Pool Size=20;" +           // Allow up to 20 concurrent connections
+                "Incr Pool Size=2;" +           // Grow pool by 2 when needed
+                "Decr Pool Size=1;" +           // Shrink pool slowly
+                "Connection Lifetime=300;" +    // Recycle connections every 5 min (avoid stale connections)
+                "Connection Timeout=60;" +      // Timeout for new connections
+                "Validate Connection=true;";    // Validate before reuse (Oracle-specific)
 
             // Register a DbContext factory (singleton-friendly)
             services.AddDbContextFactory<AppDbContext>(options =>

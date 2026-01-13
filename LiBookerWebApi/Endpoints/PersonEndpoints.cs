@@ -11,16 +11,30 @@ namespace LiBookerWebApi.Endpoints
             // GET /api/persons
             group.MapGet("/", async (IPersonService service, CancellationToken ct) =>
             {
-                var list = await service.GetAllAsync(ct);
-                return Results.Ok(list);
+                try
+                {
+                    var list = await service.GetAllAsync(ct);
+                    return Results.Ok(list);
+                }
+                catch (OperationCanceledException)
+                {
+                    return Results.StatusCode(499);
+                }
             })
             .WithName("GetAllPersons");
 
             // GET /api/persons/{id}
             group.MapGet("/{id:int}", async (int id, IPersonService service, CancellationToken ct) =>
             {
-                var person = await service.GetByIdAsync(id, ct);
-                return person is null ? Results.NotFound() : Results.Ok(person);
+                try
+                {
+                    var person = await service.GetByIdAsync(id, ct);
+                    return person is null ? Results.NotFound() : Results.Ok(person);
+                }
+                catch (OperationCanceledException)
+                {
+                    return Results.StatusCode(499);
+                }
             })
             .WithName("GetPersonById");
         }

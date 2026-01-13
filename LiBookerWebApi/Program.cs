@@ -19,7 +19,7 @@ builder.Services.AddOracleDb(builder.Configuration);
 
 // register scoped services
 builder.Services.AddScoped<IPersonService, PersonService>();
-
+builder.Services.AddScoped<IPublicationService, PublicationService>();
 
 var app = builder.Build();
 
@@ -27,6 +27,7 @@ app.UseHttpsRedirection();
 app.UseAuthorization();
 
 app.MapPersonEndpoints();
+app.MapPublicationEndpoints();
 
 if (app.Environment.IsDevelopment())
 {

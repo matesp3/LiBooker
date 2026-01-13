@@ -1,6 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Oracle.ManagedDataAccess.Client;
-using Microsoft.Extensions.Logging;
 using LiBookerWebApi.Models.Entities;
 
 namespace LiBookerWebApi.Model
