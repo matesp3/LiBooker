@@ -1,5 +1,5 @@
-using LiBookerWebApi.Infrastructure;
 using LiBookerWebApi.Endpoints;
+using LiBookerWebApi.Infrastructure;
 using LiBookerWebApi.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -8,19 +8,10 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddAuthorization();
 
+string corsPolicy = string.Empty;
 if (builder.Environment.IsDevelopment())
 {
-    // Configure CORS to allow the Blazor WASM origin to make API calls during development
-    builder.Services.AddCors(options =>
-    {
-        options.AddPolicy("AllowLocalBlazor", policy =>
-        {
-            policy.WithOrigins("https://localhost:7192") // my WASM origin
-              .AllowAnyHeader()
-              .AllowAnyMethod();
-            // .AllowCredentials(); // only if when I need cookies/auth; then don't use AllowAnyOrigin()
-        });
-    });
+    corsPolicy = ConfigureDevCors(builder);
 }
 
 // existing method that configures Oracle/DbContext
@@ -41,7 +32,29 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
-    app.UseCors("AllowLocalBlazor");
+    if (corsPolicy != string.Empty)
+        app.UseCors(corsPolicy);
 }
 
 app.Run();
+
+
+static string ConfigureDevCors(WebApplicationBuilder builder)
+{
+    var cfg = builder.Configuration.GetSection("CORS");
+    string wasmOrigin = cfg["WASM origin"] ?? "https://localhost:7192";
+
+    string corsPolicyName = "AllowLocalBlazor";
+    // Configure CORS to allow the Blazor WASM origin to make API calls during development
+    builder.Services.AddCors(options =>
+    {
+        options.AddPolicy(corsPolicyName, policy =>
+        {
+            policy.WithOrigins(wasmOrigin) // my WASM origin
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+            // .AllowCredentials(); // only if when I need cookies/auth; then don't use AllowAnyOrigin()
+        });
+    });
+    return corsPolicyName;
+}
