@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
+using Microsoft.JSInterop;
 using LiBooker.Blazor.Client.Services;
 
 
@@ -24,13 +25,17 @@ namespace LiBookerWasmApp
                 client.BaseAddress = new Uri(apiBase);
             });
 
-            // Scoped state/services
-            //builder.Services.AddScoped<PersonState>(); // TODO CO S TYM
-
             // If you plan to use authorization in components
             builder.Services.AddAuthorizationCore();
 
-            await builder.Build().RunAsync();
+            // Build host so we can use IJSRuntime
+            var host = builder.Build();
+
+            // Log to browser console (visible in DevTools -> Console)
+            var js = host.Services.GetRequiredService<IJSRuntime>();
+            await js.InvokeVoidAsync("console.log", $"Resolved ApiBaseUrl: '{apiBase}'");
+
+            await host.RunAsync();
         }
     }
 }

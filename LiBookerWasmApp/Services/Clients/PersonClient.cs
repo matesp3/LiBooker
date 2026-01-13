@@ -1,7 +1,8 @@
-using System.Net.Http;
 using System.Net.Http.Json;
+using System.Text;
+using System.Text.Json;
 using LiBooker.Blazor.Client.Models;
-using LiBooker.Shared.Models.DTOs;
+using LiBooker.Shared.DTOs;
 
 namespace LiBooker.Blazor.Client.Services
 {
@@ -17,6 +18,14 @@ namespace LiBooker.Blazor.Client.Services
                 var res = await _http.GetAsync("api/persons", ct).ConfigureAwait(false);
                 if (res.IsSuccessStatusCode)
                 {
+                    var mediaType = res.Content.Headers.ContentType?.MediaType;
+                    if (mediaType is null || !mediaType.Contains("json", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var text = await res.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
+                        var preview = text.Length > 300 ? text.Substring(0, 300) + "..." : text;
+                        return ApiResponse<List<PersonDto>?>.Fail($"Expected JSON but server returned content-type '{mediaType ?? "null"}'. Response preview: {preview}");
+                    }
+
                     var data = await res.Content.ReadFromJsonAsync<List<PersonDto>>(cancellationToken: ct).ConfigureAwait(false);
                     return ApiResponse<List<PersonDto>?>.Success(data ?? new List<PersonDto>());
                 }
@@ -24,8 +33,8 @@ namespace LiBooker.Blazor.Client.Services
                 if (res.StatusCode == System.Net.HttpStatusCode.NotFound)
                     return ApiResponse<List<PersonDto>?>.Fail("Not found", (int)res.StatusCode);
 
-                var text = await res.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
-                return ApiResponse<List<PersonDto>?>.Fail($"Server returned {(int)res.StatusCode}: {text}", (int)res.StatusCode);
+                var textFallback = await res.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
+                return ApiResponse<List<PersonDto>?>.Fail($"Server returned {(int)res.StatusCode}: {textFallback}", (int)res.StatusCode);
             }
             catch (OperationCanceledException)
             {
@@ -33,7 +42,6 @@ namespace LiBooker.Blazor.Client.Services
             }
             catch (Exception ex)
             {
-                // Log exception as needed
                 return ApiResponse<List<PersonDto>?>.Fail($"Request failed: {ex.Message}");
             }
         }
