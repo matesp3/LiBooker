@@ -26,8 +26,9 @@ var app = builder.Build();
 app.UseHttpsRedirection();
 app.UseAuthorization();
 
+bool logDuration = IsDurationLoggingEnabled(app);
 app.MapPersonEndpoints();
-app.MapPublicationEndpoints();
+app.MapPublicationEndpoints(logDuration);
 
 if (app.Environment.IsDevelopment())
 {
@@ -58,4 +59,18 @@ static string ConfigureDevCors(WebApplicationBuilder builder)
         });
     });
     return corsPolicyName;
+}
+
+/// <summary>
+/// Whether duration logging (on console) is enabled via configuration.
+/// </summary>
+static bool IsDurationLoggingEnabled(WebApplication app)
+{
+    var cfg = app.Configuration.GetSection("Performance");
+    string val = (cfg["LogDuration"]?.ToLower() ?? "");
+    return val switch
+    {
+        "1" or "true" or "yes" or "on" => true,
+        _ => false,
+    };
 }

@@ -13,11 +13,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\SharedComponents\LiBookerShared.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Services\Clients\" />
+    <ProjectReference Include="..\LiBookerShared\LiBookerShared.csproj" />
   </ItemGroup>
 
 </Project>

@@ -25,7 +25,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\SharedComponents\LiBookerShared.csproj" />
+    <ProjectReference Include="..\LiBookerShared\LiBookerShared.csproj" />
   </ItemGroup>
 
 </Project>

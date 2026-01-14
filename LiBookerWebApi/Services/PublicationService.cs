@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
-using LiBooker.Shared.DTOs;
 using LiBookerWebApi.Model;
+using LiBooker.Shared.DTOs;
 using System.Diagnostics;
 
 namespace LiBookerWebApi.Services
@@ -15,18 +15,99 @@ namespace LiBookerWebApi.Services
             _db = db;
         }
 
-        // Raw SQL with LISTAGG - single query, bypasses EF Core overhead
-        public async Task<List<PublicationMainInfo>> GetAllAsync(int pageNumber = 1, int pageSize = 50, CancellationToken ct = default)
+        // Raw SQL with LISTAGG - single query, bypasses vast EF Core overhead
+        public async Task<List<PublicationMainInfo>> GetAllAsync(int pageNumber = 1, int pageSize = 50, bool durLoggingEnabled = false, CancellationToken ct = default)
         {
-            //var swTotal = Stopwatch.StartNew();
-            //Console.WriteLine($"[PublicationService] Starting raw SQL query at {DateTime.Now:HH:mm:ss.fff}");
+            Stopwatch? swExec = null;
+            if (durLoggingEnabled)
+                swExec = Stopwatch.StartNew();
 
             var offset = (pageNumber - 1) * pageSize;
-            //var swExec = Stopwatch.StartNew();
 
-            // Single optimized SQL query with LISTAGG (no EF Core overhead, no multiple costly queries)
+            // Single optimized SQL query with LISTAGG (no EF Core overhead, no multiple costly queries) - with NULL image
             var results = await _db.Database
-                .SqlQuery<PublicationMainInfo>($@"
+                .SqlQuery<PublicationMainInfo>(BuildRawSqlPublicationsPageQuery(pageSize, offset))
+                .ToListAsync(ct);
+
+            if (durLoggingEnabled)
+            {
+                swExec?.Stop();
+                Console.WriteLine($"[PublicationService] Raw SQL execution took {swExec?.ElapsedMilliseconds} ms");
+                Console.WriteLine($"[PublicationService] Retrieved {results.Count} publications");
+            }
+
+            var mapped = results.Select(r => new PublicationMainInfo
+            {
+                Title = r.Title,
+                Author = r.Author,
+                Publication = r.Publication,
+                Year = r.Year,
+                ImageId = r.ImageId,
+                Image = []
+            }).ToList();
+
+            return mapped;
+        }
+
+        public async Task<PublicationMainInfo?> GetByIdAsync(int publicationId, CancellationToken ct = default)
+        {
+            var p = await _db.Publications
+                .AsNoTracking()
+                .AsSplitQuery()
+                .Include(x => x.Book)
+                    .ThenInclude(b => b.BookAuthors)
+                        .ThenInclude(ba => ba.Author)
+                .Include(x => x.Publisher)
+                .Include(x => x.CoverImage)
+                .FirstOrDefaultAsync(x => x.Id == publicationId, ct);
+
+            if (p == null) return null;
+
+            var authorNames = p.Book.BookAuthors?
+                .Select(ba =>
+                {
+                    var a = ba.Author;
+                    if (a == null) return null;
+                    return $"{a.FirstName} {a.LastName}".Trim();
+                })
+                .Where(s => !string.IsNullOrWhiteSpace(s))
+                .Distinct()
+                .ToList()
+                ?? [];
+
+            return new PublicationMainInfo
+            {
+                Title = p.Book.Title,
+                Author = authorNames.Count > 0 ? string.Join(", ", authorNames) : "Unknown",
+                Publication = p.Publisher.Name,
+                Year = p.Year,
+                ImageId = p.CoverImageId,
+                Image = p.CoverImage?.Image
+            };
+        }
+
+        public async Task<List<PublicationImageDto>> GetPublicationImagesByIdsAsync(int[] ids, CancellationToken ct)
+        {
+            return await _db.CoverImages
+                .AsNoTracking()
+                .Where(img => ids.Contains(img.Id))
+                .Select(img => new PublicationImageDto
+                { 
+                    ImageId = img.Id,
+                    ImageData = img.Image
+                }
+                ).ToListAsync(ct);
+        }
+
+        /// <summary>
+        /// Builds the raw SQL query for paginated publications with LISTAGG for authors (with NULL image).
+        /// </summary>
+        /// <param name="pageSize"></param>
+        /// <param name="offset"></param>
+        /// <returns></returns>
+        private static FormattableString BuildRawSqlPublicationsPageQuery(int pageSize, int offset)
+        {
+            return $@"
                     SELECT 
                         k.NAZOV AS Title,
                         LISTAGG(a.MENO || ' ' || a.PRIEZVISKO, ', ') 
@@ -43,31 +124,7 @@ namespace LiBookerWebApi.Services
                     GROUP BY v.ID_VYDANIA, k.NAZOV, vyd.NAZOV, v.ROK_VYDANIA, v.ID_OBRAZKU
                     ORDER BY v.ID_VYDANIA
                     OFFSET {offset} ROWS FETCH NEXT {pageSize} ROWS ONLY
-                ")
-                .ToListAsync(ct);
-
-            //swExec.Stop();
-            //Console.WriteLine($"[PublicationService] Raw SQL execution took {swExec.ElapsedMilliseconds} ms");
-            //Console.WriteLine($"[PublicationService] Retrieved {results.Count} publications");
-            //var swMap = Stopwatch.StartNew();
-
-            var mapped = results.Select(r => new PublicationMainInfo
-            {
-                Title = r.Title,
-                Author = r.Author,
-                Publication = r.Publication,
-                Year = r.Year,
-                ImageId = r.ImageId,
-                Image = []
-            }).ToList();
-
-            //swMap.Stop();
-            //swTotal.Stop();
-            //Console.WriteLine($"[PublicationService] Mapping took {swMap.ElapsedMilliseconds} ms");
-            //Console.WriteLine($"[PublicationService] TOTAL took {swTotal.ElapsedMilliseconds} ms");
-            //Console.WriteLine($"[PublicationService] Breakdown: Exec={swExec.ElapsedMilliseconds}ms, Map={swMap.ElapsedMilliseconds}ms");
-
-            return mapped;
+                ";
         }
 
         //public async Task<List<PublicationMainInfo>> GetAllAsync(int pageNumber = 1, int pageSize = 50, CancellationToken ct = default)
@@ -124,54 +181,12 @@ namespace LiBookerWebApi.Services
 
         //    swMap.Stop();
         //    swTotal.Stop();
-            
+
         //    Console.WriteLine($"[PublicationService] Mapping took {swMap.ElapsedMilliseconds} ms");
         //    Console.WriteLine($"[PublicationService] TOTAL took {swTotal.ElapsedMilliseconds} ms");
         //    Console.WriteLine($"[PublicationService] Breakdown: Build={swQueryBuild.ElapsedMilliseconds}ms, Exec={swExec.ElapsedMilliseconds}ms, Map={swMap.ElapsedMilliseconds}ms");
 
         //    return result;
         //}
-
-        public async Task<PublicationMainInfo?> GetByIdAsync(int publicationId, CancellationToken ct = default)
-        {
-            //var sw = Stopwatch.StartNew();
-
-            var p = await _db.Publications
-                .AsNoTracking()
-                .AsSplitQuery()
-                .Include(x => x.Book)
-                    .ThenInclude(b => b.BookAuthors)
-                        .ThenInclude(ba => ba.Author)
-                .Include(x => x.Publisher)
-                .Include(x => x.CoverImage)
-                .FirstOrDefaultAsync(x => x.Id == publicationId, ct);
-
-            //sw.Stop();
-            //Console.WriteLine($"[PublicationService] GetByIdAsync took {sw.ElapsedMilliseconds} ms");
-
-            if (p == null) return null;
-
-            var authorNames = p.Book.BookAuthors?
-                .Select(ba =>
-                {
-                    var a = ba.Author;
-                    if (a == null) return null;
-                    return $"{a.FirstName} {a.LastName}".Trim();
-                })
-                .Where(s => !string.IsNullOrWhiteSpace(s))
-                .Distinct()
-                .ToList()
-                ?? [];
-
-            return new PublicationMainInfo
-            {
-                Title = p.Book.Title,
-                Author = authorNames.Count > 0 ? string.Join(", ", authorNames) : "Unknown",
-                Publication = p.Publisher.Name,
-                Year = p.Year,
-                ImageId = p.CoverImageId,
-                Image = p.CoverImage?.Image
-            };
-        }
     }
 }

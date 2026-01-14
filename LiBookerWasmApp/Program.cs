@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Microsoft.JSInterop;
-using LiBooker.Blazor.Client.Services;
-
+using LiBookerWasmApp.Services.Clients;
 
 namespace LiBookerWasmApp
 {
@@ -12,18 +11,7 @@ namespace LiBookerWasmApp
             var builder = WebAssemblyHostBuilder.CreateDefault(args);
             builder.RootComponents.Add<App>("#app");
 
-            // Resolve API base from configuration (wwwroot/appsettings.json) or fallback to host base address.
-            var apiBase = builder.Configuration["ApiBaseUrl"];
-            if (string.IsNullOrWhiteSpace(apiBase))
-            {
-                apiBase = builder.HostEnvironment.BaseAddress;
-            }
-
-            // Typed client: PersonClient receives HttpClient via constructor
-            builder.Services.AddHttpClient<PersonClient>(client =>
-            {
-                client.BaseAddress = new Uri(apiBase);
-            });
+            string apiBase = ConfigureApiServices(builder);
 
             // If you plan to use authorization in components
             builder.Services.AddAuthorizationCore();
@@ -36,6 +24,27 @@ namespace LiBookerWasmApp
             await js.InvokeVoidAsync("console.log", $"Resolved ApiBaseUrl: '{apiBase}'");
 
             await host.RunAsync();
+        }
+
+        private static string ConfigureApiServices(WebAssemblyHostBuilder builder)
+        {
+            // Resolve API base from configuration (wwwroot/appsettings.json) or fallback to host base address.
+            var apiBase = builder.Configuration["ApiBaseUrl"];
+            if (string.IsNullOrWhiteSpace(apiBase))
+            {
+                apiBase = builder.HostEnvironment.BaseAddress;
+            }
+
+            // Typed client: PersonClient receives HttpClient via constructor
+            builder.Services.AddHttpClient<PersonClient>(client =>
+            {
+                client.BaseAddress = new Uri(apiBase);
+            });
+            builder.Services.AddHttpClient<PublicationClient>(client =>
+            {
+                client.BaseAddress = new Uri(apiBase);
+            });
+            return apiBase;
         }
     }
 }

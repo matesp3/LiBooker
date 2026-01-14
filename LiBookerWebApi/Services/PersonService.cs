@@ -2,7 +2,6 @@ using Microsoft.EntityFrameworkCore;
 using LiBookerWebApi.Model;
 using LiBooker.Shared.DTOs;
 
-
 namespace LiBookerWebApi.Services
 {
     public class PersonService : IPersonService

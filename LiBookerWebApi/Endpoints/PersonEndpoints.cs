@@ -4,11 +4,23 @@ namespace LiBookerWebApi.Endpoints
 {
     public static class PersonEndpoints
     {
+        /// <summary>
+        /// Maps the person-related API endpoints to the provided WebApplication.
+        /// </summary>
+        /// <param name="app"></param>
         public static void MapPersonEndpoints(this WebApplication app)
         {
             var group = app.MapGroup("/api/persons");
+            MapGetAllPersonsEndpoint(group);
+            MapGetPersonByIdEndpoint(group);
+        }
 
-            // GET /api/persons
+        /// <summary>
+        /// GET /api/persons
+        /// </summary>
+        /// <param name="group"></param>
+        private static void MapGetAllPersonsEndpoint(RouteGroupBuilder group)
+        {
             group.MapGet("/", async (IPersonService service, CancellationToken ct) =>
             {
                 try
@@ -22,8 +34,14 @@ namespace LiBookerWebApi.Endpoints
                 }
             })
             .WithName("GetAllPersons");
+        }
 
-            // GET /api/persons/{id}
+        /// <summary>
+        /// GET /api/persons/{id}
+        /// </summary>
+        /// <param name="group"></param>
+        private static void MapGetPersonByIdEndpoint(RouteGroupBuilder group)
+        {
             group.MapGet("/{id:int}", async (int id, IPersonService service, CancellationToken ct) =>
             {
                 try
