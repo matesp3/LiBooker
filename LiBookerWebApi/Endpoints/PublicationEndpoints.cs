@@ -16,9 +16,10 @@ namespace LiBookerWebApi.Endpoints
         public static void MapPublicationEndpoints(this WebApplication app, bool durLoggingEnabled)
         {
             RouteGroupBuilder group = app.MapGroup("/api/publications");
-            MapGetPublicationsPerPageEndpoint(group, durLoggingEnabled);
-            MapGetPublicationByIdEndpoint(group, durLoggingEnabled);
-            MapGetPublicationImagesByIdsEndpoint(group, durLoggingEnabled);
+            MapGetPublicationsPerPageEndpoint(group, durLoggingEnabled);    // GET /api/publications?pageNumber=x&pageSize=y
+            MapGetPublicationByIdEndpoint(group, durLoggingEnabled);        // GET /api/publications/{id}
+            MapGetPublicationImagesByIdsEndpoint(group, durLoggingEnabled); // GET /api/publications/image_ids?ids=1&ids=2&ids=3
+            MapGetPublicationsCountEndpoint(group, durLoggingEnabled);      // GET /api/publications/count
         }
 
         /// <summary>
@@ -66,7 +67,7 @@ namespace LiBookerWebApi.Endpoints
                 try
                 {
                     Stopwatch? swOverall = null;
-                    if (durLoggingEnabled) 
+                    if (durLoggingEnabled)
                         swOverall = Stopwatch.StartNew();
                     // Validate pagination parameters
                     if (pageNumber < 1)
@@ -114,7 +115,7 @@ namespace LiBookerWebApi.Endpoints
 
                     Stopwatch? swOverall = null;
                     if (durLoggingEnabled)
-                       swOverall = Stopwatch.StartNew();
+                        swOverall = Stopwatch.StartNew();
 
                     var images = await svc.GetPublicationImagesByIdsAsync(ids, ct);
 
@@ -131,6 +132,32 @@ namespace LiBookerWebApi.Endpoints
                 }
             }
             ).WithName("GetPublicationImagesByIds");
+        }
+
+        private static void MapGetPublicationsCountEndpoint(RouteGroupBuilder group, bool durLoggingEnabled)
+        {
+            group.MapGet("/count", async (Services.IPublicationService svc, CancellationToken ct) =>
+            {
+                try
+                {
+                    Stopwatch? swOverall = null;
+                    if (durLoggingEnabled)
+                        swOverall = Stopwatch.StartNew();
+
+                    var count = await svc.GetPublicationsCountAsync(ct);
+
+                    if (durLoggingEnabled)
+                    {
+                        swOverall?.Stop();
+                        Console.WriteLine($"[PublicationEndpoint] GET /api/publications/count took {swOverall?.ElapsedMilliseconds} ms");
+                    }
+                    return Results.Ok(count);
+                }
+                catch (OperationCanceledException)
+                {
+                    return Results.StatusCode(499);
+                }
+            }).WithName("GetPublicationsCount");
         }
     }
 }

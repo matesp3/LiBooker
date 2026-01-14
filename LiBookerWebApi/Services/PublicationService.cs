@@ -127,6 +127,11 @@ namespace LiBookerWebApi.Services
                 ";
         }
 
+        public async Task<int> GetPublicationsCountAsync(CancellationToken ct)
+        {
+            return await _db.Publications.CountAsync(ct);
+        }
+
         //public async Task<List<PublicationMainInfo>> GetAllAsync(int pageNumber = 1, int pageSize = 50, CancellationToken ct = default)
         //{
         //    var swTotal = Stopwatch.StartNew();

@@ -11,6 +11,13 @@ namespace LiBookerWasmApp.Services.Clients
 
         public PublicationClient(HttpClient http) => _http = http;
 
+        /// <summary>
+        /// Retrieves a paginated list of publications with main info only (no images, becauses it costs vast amount of resources).
+        /// </summary>
+        /// <param name="pageNumber"></param>
+        /// <param name="pageSize"></param>
+        /// <param name="ct"></param>
+        /// <returns></returns>
         public async Task<ApiResponse<List<PublicationMainInfo>?>> GetAllAsync(int pageNumber = 1, int pageSize = 15, CancellationToken ct = default)
         {
             try
@@ -43,6 +50,12 @@ namespace LiBookerWasmApp.Services.Clients
             }
         }
 
+        /// <summary>
+        /// Retrieves all data for a single publication by its ID.
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="ct"></param>
+        /// <returns></returns>
         public async Task<ApiResponse<PublicationMainInfo?>> GetByIdAsync(int id, CancellationToken ct = default)
         {
             try
@@ -98,6 +111,33 @@ namespace LiBookerWasmApp.Services.Clients
             catch (Exception ex)
             {
                 return ApiResponse<List<PublicationImageDto>>.Fail($"Request failed: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Retrieves the total count of publications from database.
+        /// </summary>
+        /// <param name="ct"></param>
+        /// <returns></returns>
+        public async Task<int> GetPublicationsCountAsync(CancellationToken ct = default)
+        {
+            try
+            {
+                var res = await _http.GetAsync("api/publications/count", ct).ConfigureAwait(false);
+                if (res.IsSuccessStatusCode)
+                {
+                    var count = await res.Content.ReadFromJsonAsync<int>(ct).ConfigureAwait(false);
+                    return count;
+                }
+                return -1;
+            }
+            catch (OperationCanceledException)
+            {
+                return -1;
+            }
+            catch (Exception)
+            {
+                return -1;
             }
         }
     }
