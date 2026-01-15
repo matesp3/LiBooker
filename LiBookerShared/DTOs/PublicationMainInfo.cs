@@ -20,5 +20,9 @@ namespace LiBooker.Shared.DTOs
 
         // Cover image bytes (table 'titulny_obrazok', column 'obrazok')
         public byte[]? Image { get; set; }
+
+        public bool IsAvailable { get; set; } = false;
+
+        public int AvailableCopies { get; set; } = 0;
     }
 }

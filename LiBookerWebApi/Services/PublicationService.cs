@@ -1,7 +1,8 @@
-using Microsoft.EntityFrameworkCore;
-using LiBookerWebApi.Model;
 using LiBooker.Shared.DTOs;
+using LiBookerWebApi.Model;
+using Microsoft.EntityFrameworkCore;
 using System.Diagnostics;
+using static LiBooker.Shared.EndpointParams.PublicationParams;
 
 namespace LiBookerWebApi.Services
 {
@@ -13,40 +14,6 @@ namespace LiBookerWebApi.Services
         public PublicationService(AppDbContext db)
         {
             _db = db;
-        }
-
-        // Raw SQL with LISTAGG - single query, bypasses vast EF Core overhead
-        public async Task<List<PublicationMainInfo>> GetAllAsync(int pageNumber = 1, int pageSize = 50, bool durLoggingEnabled = false, CancellationToken ct = default)
-        {
-            Stopwatch? swExec = null;
-            if (durLoggingEnabled)
-                swExec = Stopwatch.StartNew();
-
-            var offset = (pageNumber - 1) * pageSize;
-
-            // Single optimized SQL query with LISTAGG (no EF Core overhead, no multiple costly queries) - with NULL image
-            var results = await _db.Database
-                .SqlQuery<PublicationMainInfo>(BuildRawSqlPublicationsPageQuery(pageSize, offset))
-                .ToListAsync(ct);
-
-            if (durLoggingEnabled)
-            {
-                swExec?.Stop();
-                Console.WriteLine($"[PublicationService] Raw SQL execution took {swExec?.ElapsedMilliseconds} ms");
-                Console.WriteLine($"[PublicationService] Retrieved {results.Count} publications");
-            }
-
-            var mapped = results.Select(r => new PublicationMainInfo
-            {
-                Title = r.Title,
-                Author = r.Author,
-                Publication = r.Publication,
-                Year = r.Year,
-                ImageId = r.ImageId,
-                Image = []
-            }).ToList();
-
-            return mapped;
         }
 
         public async Task<PublicationMainInfo?> GetByIdAsync(int publicationId, CancellationToken ct = default)
@@ -99,99 +66,177 @@ namespace LiBookerWebApi.Services
                 ).ToListAsync(ct);
         }
 
-        /// <summary>
-        /// Builds the raw SQL query for paginated publications with LISTAGG for authors (with NULL image).
-        /// </summary>
-        /// <param name="pageSize"></param>
-        /// <param name="offset"></param>
-        /// <returns></returns>
-        private static FormattableString BuildRawSqlPublicationsPageQuery(int pageSize, int offset)
-        {
-            return $@"
-                    SELECT 
-                        k.NAZOV AS Title,
-                        LISTAGG(a.MENO || ' ' || a.PRIEZVISKO, ', ') 
-                            WITHIN GROUP (ORDER BY a.MENO, a.PRIEZVISKO) AS Author,
-                        vyd.NAZOV AS Publication,
-                        v.ROK_VYDANIA AS Year,
-                        v.ID_OBRAZKU as ImageId,
-                        null as Image
-                    FROM VYDANIE v
-                    INNER JOIN KNIHA k ON v.ID_KNIHY = k.ID_KNIHY
-                    LEFT JOIN KNIHY ka ON k.ID_KNIHY = ka.ID_KNIHY
-                    LEFT JOIN AUTOR a ON ka.ID_AUTORA = a.ID_AUTORA
-                    LEFT JOIN VYDAVATELSTVO vyd ON v.ID_VYDAVATELSTVA = vyd.ID_VYDAVATELSTVA
-                    GROUP BY v.ID_VYDANIA, k.NAZOV, vyd.NAZOV, v.ROK_VYDANIA, v.ID_OBRAZKU
-                    ORDER BY v.ID_VYDANIA
-                    OFFSET {offset} ROWS FETCH NEXT {pageSize} ROWS ONLY
-                ";
-        }
-
         public async Task<int> GetPublicationsCountAsync(CancellationToken ct)
         {
             return await _db.Publications.CountAsync(ct);
         }
 
-        //public async Task<List<PublicationMainInfo>> GetAllAsync(int pageNumber = 1, int pageSize = 50, CancellationToken ct = default)
-        //{
-        //    var swTotal = Stopwatch.StartNew();
-        //    Console.WriteLine($"[PublicationService] Starting GetAllAsync at {DateTime.Now:HH:mm:ss.fff}");
+        public async Task<List<PublicationMainInfo>> GetAllAsync(
+            int pageNumber = 1,
+            int pageSize = 50,
+            PublicationAvailability availability = PublicationAvailability.All,
+            PublicationsSorting sorting = PublicationsSorting.None,
+            bool durLoggingEnabled = false,
+            CancellationToken ct = default)
+        {
+            List<PublicationMainInfo>? result = null;
+            Stopwatch? swTotal = durLoggingEnabled ? Stopwatch.StartNew() : null;
 
-        //    var swQueryBuild = Stopwatch.StartNew();
-        //    var query = _db.Publications
+            result = await GetAvailableAsync(pageNumber, pageSize, availability, sorting, durLoggingEnabled, ct);
+
+            EndLoggingIfNeeed();
+            return result ?? [];
+
+            void EndLoggingIfNeeed()
+            {
+                if (durLoggingEnabled) {
+                    swTotal?.Stop();
+                    Console.WriteLine($"[PublicationService] TOTAL took {swTotal?.ElapsedMilliseconds} ms, Records: {result?.Count}");
+                }
+            }
+        }
+
+        //public async Task<List<PublicationMainInfo>> GetAvailableAsync(
+        //    int pageNumber = 1,
+        //    int pageSize = 50,
+        //    bool durLoggingEnabled = false,
+        //    CancellationToken ct = default)
+        //{
+        //    var today = DateTime.Today;  // TRUNC(SYSDATE)
+
+        //    // IDs of available publications
+        //    var publicationIds = await _db.Publications
         //        .AsNoTracking()
-        //        .AsSplitQuery()
-        //        .Include(p => p.Book)
-        //            .ThenInclude(b => b.BookAuthors)
-        //                .ThenInclude(ba => ba.Author)
-        //        .Include(p => p.Publisher)
-        //        //.Include(p => p.CoverImage)
+        //        .Where(p => p.Copies != null && p.Copies
+        //            .Any(v =>  // has any copy. Publication is available if at least one of its copies is available
+        //                v.Loans == null || !v.Loans.Any(vp => // has no loans OR has loans but none are active
+        //                vp.ReturnedAt == null || vp.ReturnedAt > today) // not returned yet OR returned in the future
+        //        ))
         //        .OrderBy(p => p.Id)
         //        .Skip((pageNumber - 1) * pageSize)
-        //        .Take(pageSize);
-        //    swQueryBuild.Stop();
-        //    Console.WriteLine($"[PublicationService] Query build took {swQueryBuild.ElapsedMilliseconds} ms");
+        //        .Take(pageSize)
+        //        .Select(p => p.Id)
+        //        .ToListAsync(ct);
 
-        //    var swExec = Stopwatch.StartNew();
-        //    Console.WriteLine($"[PublicationService] Starting ToListAsync at {DateTime.Now:HH:mm:ss.fff}");
-        //    var publications = await query.ToListAsync(ct);
-        //    swExec.Stop();
-        //    Console.WriteLine($"[PublicationService] ToListAsync (DB query) took {swExec.ElapsedMilliseconds} ms");
-        //    Console.WriteLine($"[PublicationService] Retrieved {publications.Count} publications");
+        //    if (publicationIds.Count == 0)
+        //        return [];
 
-        //    var swMap = Stopwatch.StartNew();
-        //    var result = publications.Select(p =>
-        //    {
-        //        var authorNames = p.Book?.BookAuthors?
-        //            .Select(ba =>
-        //            {
-        //                var a = ba.Author;
-        //                if (a == null) return null;
-        //                return $"{a.FirstName} {a.LastName}".Trim();
-        //            })
-        //            .Where(s => !string.IsNullOrWhiteSpace(s))
-        //            .Distinct()
-        //            .ToList()
-        //            ?? [];
-
-        //        return new PublicationMainInfo
+        //    // Retrieve raw data from the database
+        //    var rawData = await _db.Publications
+        //        .AsNoTracking()
+        //        .Where(p => publicationIds.Contains(p.Id))
+        //        .Select(p => new
         //        {
-        //            Title = p.Book?.Title,
-        //            Author = authorNames.Count > 0 ? string.Join(", ", authorNames) : null,
-        //            Publication = p.Publisher?.Name,
-        //            Year = p.Year,
-        //            Image = []
-        //        };
+        //            p.Id,
+        //            Title = p.Book.Title,
+        //            Authors = p.Book.BookAuthors
+        //                .Select(ba => ba.Author != null ? ba.Author.FirstName + " " + ba.Author.LastName : "Unknown")
+        //                .ToList(),
+        //            Publication = p.Publisher.Name,
+        //            p.Year,
+        //            p.CoverImageId
+        //        })
+        //        .ToListAsync(ct);
+
+        //    var result = rawData.Select(p => new PublicationMainInfo
+        //    {
+        //        Title = p.Title ?? "Unknown",
+        //        Author = p.Authors != null && p.Authors.Count != 0
+        //            ? string.Join(", ", p.Authors
+        //                .Select(a => a.Trim())
+        //                .Where(a => !string.IsNullOrWhiteSpace(a))
+        //                .Distinct())
+        //            : "Unknown",
+        //        Publication = p.Publication ?? "Unknown",
+        //        Year = p.Year,
+        //        ImageId = p.CoverImageId,
+        //        Image = []
         //    }).ToList();
-
-        //    swMap.Stop();
-        //    swTotal.Stop();
-
-        //    Console.WriteLine($"[PublicationService] Mapping took {swMap.ElapsedMilliseconds} ms");
-        //    Console.WriteLine($"[PublicationService] TOTAL took {swTotal.ElapsedMilliseconds} ms");
-        //    Console.WriteLine($"[PublicationService] Breakdown: Build={swQueryBuild.ElapsedMilliseconds}ms, Exec={swExec.ElapsedMilliseconds}ms, Map={swMap.ElapsedMilliseconds}ms");
 
         //    return result;
         //}
+
+        public async Task<List<PublicationMainInfo>> GetAvailableAsync(
+            int pageNumber = 1,
+            int pageSize = 50,
+            PublicationAvailability availability = PublicationAvailability.All,
+            PublicationsSorting sorting = PublicationsSorting.None,
+            bool durLoggingEnabled = false,
+            CancellationToken ct = default)
+        {
+            var swTotal = durLoggingEnabled ? Stopwatch.StartNew() : null;
+            var today = DateTime.Today;
+
+            var query = _db.Publications
+                .AsNoTracking()
+                .AsQueryable();
+            query = BuildParametrizedQuery(availability, sorting, today, query);
+
+            var rawData = await query
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .Select(p => new
+                {
+                    p.Id,
+                    p.Book.Title,
+                    Authors = p.Book.BookAuthors
+                        .Select(ba => ba.Author != null
+                            ? ba.Author.FirstName + " " + ba.Author.LastName
+                            : "Unknown")
+                        .ToList(),
+                    Publication = p.Publisher.Name,
+                    p.Year,
+                    p.CoverImageId
+                })
+                .ToListAsync(ct);
+
+            var result = rawData.Select(p => new PublicationMainInfo
+            {
+                Title = p.Title ?? "Unknown",
+                Author = p.Authors != null && p.Authors.Count != 0
+                    ? string.Join(", ", p.Authors
+                        .Select(a => a.Trim())
+                        .Where(a => !string.IsNullOrWhiteSpace(a))
+                        .Distinct())
+                    : "Unknown",
+                Publication = p.Publication ?? "Unknown",
+                Year = p.Year,
+                ImageId = p.CoverImageId,
+                Image = []
+            }).ToList();
+
+            swTotal?.Stop();
+            if (durLoggingEnabled)
+                Console.WriteLine($"[PublicationService] Single query took {swTotal?.ElapsedMilliseconds} ms, Records: {result.Count}");
+
+            return result;
+        }
+
+        private static IQueryable<Models.Entities.Publication> BuildParametrizedQuery(
+            PublicationAvailability availability, 
+            PublicationsSorting sorting, 
+            DateTime today, 
+            IQueryable<Models.Entities.Publication> query)
+        {
+            query = availability switch
+            {
+            PublicationAvailability.AvailableOnly => query.Where(p => p.Copies != null && p.Copies.Any(v => // Publication is available if at least one of its copies is available
+                    v.Loans == null || !v.Loans.Any(vp =>   // has no loans OR has loans but none are active
+                        vp.ReturnedAt == null || vp.ReturnedAt > today))),  // not returned yet OR returned in the future
+                _ => query
+            };
+
+            query = sorting switch
+            {
+                PublicationsSorting.ByTitleAsc => query.OrderBy(p => p.Book.Title),
+                PublicationsSorting.ByTitleDesc => query.OrderByDescending(p => p.Book.Title),
+                PublicationsSorting.ByPublicationYearAsc => query.OrderBy(p => p.Year),
+                PublicationsSorting.ByPublicationYearDesc => query.OrderByDescending(p => p.Year),
+                PublicationsSorting.ByGreatestPopularity => query
+                    .OrderByDescending(p => p.Copies!.Sum(c => c.Loans!.Count)),
+                _ => query.OrderBy(p => p.Id)
+            };
+            return query;
+        }
     }
 }

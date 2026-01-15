@@ -2,6 +2,28 @@
 
 <h3>Publications</h3>
 
+
+<div class="row mb-4">
+    <div class="col-md-4 col-sm-6 mb-2">
+        <label class="form-label fw-bold">Availability</label>
+        <select class="form-select" @bind=(this.filterAvailability) @bind:after="OnFilterChanged">
+            <option value=@(PublicationParams.GetAvailabilityText(PublicationParams.PublicationAvailability.All))>All</option>
+            <option value=@(PublicationParams.GetAvailabilityText(PublicationParams.PublicationAvailability.AvailableOnly))>Available</option>
+        </select>
+    </div>
+    <div class="col-md-4 col-sm-6 mb-2">
+        <label class="form-label fw-bold">Sort by</label>
+        <select class="form-select" @bind=(this.filterSort) @bind:after="OnFilterChanged">
+            <option value=@(PublicationParams.GetSortingText(PublicationParams.PublicationsSorting.None))>None</option>
+            <option value=@(PublicationParams.GetSortingText(PublicationParams.PublicationsSorting.ByTitleAsc))>Name (A-Z)</option>
+            <option value=@(PublicationParams.GetSortingText(PublicationParams.PublicationsSorting.ByTitleDesc))>Name (Z-A)</option>
+            <option value=@(PublicationParams.GetSortingText(PublicationParams.PublicationsSorting.ByPublicationYearAsc))>Year (Oldest first)</option>
+            <option value=@(PublicationParams.GetSortingText(PublicationParams.PublicationsSorting.ByPublicationYearDesc))>Year (Newest first)</option>
+            <option value=@(PublicationParams.GetSortingText(PublicationParams.PublicationsSorting.ByGreatestPopularity))>Most Popular</option>
+        </select>
+    </div>
+</div>
+
 @if (this.isLoading)
 {
     <p><em>Loading publications...</em></p>
@@ -64,7 +86,7 @@ else
             </div>
         }
     </div>
-    // tmp hardcoded total publications and pages
+
     var totalPages = (int)Math.Ceiling(this.totalPublications / (1.0 * Math.Max(this.pageSize, 1) ));
     
     <div class="pagination-container">

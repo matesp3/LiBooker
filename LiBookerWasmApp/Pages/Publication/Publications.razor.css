@@ -81,3 +81,7 @@
 .pagination-container button {
     min-width: 120px;
 }
+
+.form-select {
+    cursor: pointer;
+}

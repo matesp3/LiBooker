@@ -1,7 +1,8 @@
 ﻿using LiBooker.Blazor.Client.Models;
 using LiBooker.Shared.DTOs;
-using System.Collections.Generic;
+using LiBooker.Shared.EndpointParams;
 using System.Net.Http.Json;
+using static LiBooker.Shared.EndpointParams.PublicationParams;
 
 namespace LiBookerWasmApp.Services.Clients
 {
@@ -18,11 +19,17 @@ namespace LiBookerWasmApp.Services.Clients
         /// <param name="pageSize"></param>
         /// <param name="ct"></param>
         /// <returns></returns>
-        public async Task<ApiResponse<List<PublicationMainInfo>?>> GetAllAsync(int pageNumber = 1, int pageSize = 15, CancellationToken ct = default)
+        public async Task<ApiResponse<List<PublicationMainInfo>?>> GetAllAsync(int pageNumber = 1, int pageSize = 15, 
+            PublicationAvailability availability = PublicationAvailability.All, 
+            PublicationsSorting sorting = PublicationsSorting.None, 
+            CancellationToken ct = default)
         {
             try
             {
-                var res = await _http.GetAsync($"api/publications?pageNumber={pageNumber}&pageSize={pageSize}", ct).ConfigureAwait(false);
+                var res = await _http.GetAsync($"api/publications?" +
+                    $"pageNumber={pageNumber}&pageSize={pageSize}&" +
+                    $"availability={GetAvailabilityText(availability)}&sort={GetSortingText(sorting)}",
+                    ct).ConfigureAwait(false);
                 if (res.IsSuccessStatusCode)
                 {
                     var mediaType = res.Content.Headers.ContentType?.MediaType;

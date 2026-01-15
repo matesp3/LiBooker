@@ -1,10 +1,12 @@
-﻿using System.Diagnostics;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using System.Diagnostics;
+using static LiBooker.Shared.EndpointParams.PublicationParams;
 
 namespace LiBookerWebApi.Endpoints
 {
     public static class PublicationEndpoints
     {
+
         private const int MaxPagePublications = 15;
         private const int MaxPublicationIds = 10;
 
@@ -16,7 +18,7 @@ namespace LiBookerWebApi.Endpoints
         public static void MapPublicationEndpoints(this WebApplication app, bool durLoggingEnabled)
         {
             RouteGroupBuilder group = app.MapGroup("/api/publications");
-            MapGetPublicationsPerPageEndpoint(group, durLoggingEnabled);    // GET /api/publications?pageNumber=x&pageSize=y
+            MapGetPublicationsPerPageEndpoint(group, durLoggingEnabled);    // GET /api/publications?pageNumber=x&pageSize=y&availability=all&sort=none
             MapGetPublicationByIdEndpoint(group, durLoggingEnabled);        // GET /api/publications/{id}
             MapGetPublicationImagesByIdsEndpoint(group, durLoggingEnabled); // GET /api/publications/image_ids?ids=1&ids=2&ids=3
             MapGetPublicationsCountEndpoint(group, durLoggingEnabled);      // GET /api/publications/count
@@ -62,6 +64,8 @@ namespace LiBookerWebApi.Endpoints
                 Services.IPublicationService svc,
                 int pageNumber = 1,
                 int pageSize = MaxPagePublications,
+                string? availability = null,
+                string? sort = null,
                 CancellationToken ct = default) =>
             {
                 try
@@ -77,7 +81,10 @@ namespace LiBookerWebApi.Endpoints
                     if (pageSize > MaxPagePublications)
                         pageSize = MaxPagePublications; // max page size to prevent abuse
 
-                    var list = await svc.GetAllAsync(pageNumber, pageSize, durLoggingEnabled, ct);
+                    var av = ParseAvailabilityParam(availability);
+                    var sortOption = ParseSortParam(sort);
+
+                    var list = await svc.GetAllAsync(pageNumber, pageSize, av, sortOption, durLoggingEnabled, ct);
 
                     if (durLoggingEnabled)
                     {
