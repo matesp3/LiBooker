@@ -17,9 +17,10 @@ namespace LiBookerWebApi.Infrastructure
         /// must contain the following keys: "WalletPath", "UserId", "Password", and "TnsAlias". </para></remarks>
         /// <param name="services">The <see cref="IServiceCollection"/> to which the Oracle database context will be added.</param>
         /// <param name="configuration">The application configuration containing the Oracle connection settings. Must include the "Oracle" section
+        /// <param name="connectionString">Created connection string used for connecting to Oracle database</param>
         /// with required keys.</param>
         /// <returns>The same <see cref="IServiceCollection"/> instance, enabling method chaining.</returns>
-        public static IServiceCollection AddOracleDb(this IServiceCollection services, IConfiguration configuration)
+        public static IServiceCollection AddOracleDb(this IServiceCollection services, IConfiguration configuration, out string connectionString)
         {
             var oracleCfg = configuration.GetSection("Oracle");
 
@@ -44,7 +45,7 @@ namespace LiBookerWebApi.Infrastructure
             Environment.SetEnvironmentVariable("TNS_ADMIN", walletPath);
             OracleConfiguration.TnsAdmin = walletPath;
 
-            var connectionString =
+            connectionString =
                 $"User Id={userId};" +
                 $"Password={password};" +
                 $"Data Source={tnsAlias};" +
@@ -57,11 +58,13 @@ namespace LiBookerWebApi.Infrastructure
                 "Connection Timeout=60;" +      // Timeout for new connections
                 "Validate Connection=true;";    // Validate before reuse (Oracle-specific)
 
+            var connString = connectionString; // copy because of 'out' parameter, which cannot be passed to anonymous func
+
             // Register a DbContext factory (singleton-friendly)
             services.AddDbContextFactory<AppDbContext>(options =>
             {
                 options.UseOracle(
-                    connectionString,
+                    connString,
                     oracle =>
                     {
                         oracle.UseOracleSQLCompatibility(OracleSQLCompatibility.DatabaseVersion19);
@@ -79,6 +82,48 @@ namespace LiBookerWebApi.Infrastructure
             // singleton would mean one instance for the entire application lifetime
 
             return services;
+        }
+
+        /// <summary>
+        /// Warms up the Oracle connection pool by opening Min Pool Size connections during application startup.
+        /// This eliminates the cold-start delay on the first API request.
+        /// </summary>
+        public static async Task WarmUpOracleConnectionPoolAsync(this IServiceProvider services, string connectionString, 
+            bool logDetails = false, CancellationToken cancellationToken = default)
+        {
+            if (String.IsNullOrEmpty(connectionString))
+                return;
+
+            if (logDetails)
+                Console.WriteLine("Warming up Oracle connection pool...");
+
+            // Open connections to fill the Min Pool Size
+            var connections = new List<OracleConnection>();
+            try
+            {
+                // Open Min Pool Size connections
+                for (int i = 0; i < 2; i++) // matches Min Pool Size=2
+                {
+                    var conn = new OracleConnection(connectionString);
+                    await conn.OpenAsync(cancellationToken);
+                    connections.Add(conn);
+                }
+                if (logDetails)
+                    Console.WriteLine($"Oracle connection pool warmed up successfully with {connections.Count} connections.");
+            }
+            catch (Exception ex)
+            {
+                if (logDetails)
+                    Console.WriteLine($"Failed to warm up Oracle connection pool. First request may be slower. \n Details:{ex}");
+            }
+            finally
+            {
+                // Close all connections - they will return to the pool
+                foreach (var conn in connections)
+                {
+                    await conn.DisposeAsync();
+                }
+            }
         }
     }
 

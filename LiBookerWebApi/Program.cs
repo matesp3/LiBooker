@@ -15,13 +15,16 @@ if (builder.Environment.IsDevelopment())
 }
 
 // existing method that configures Oracle/DbContext
-builder.Services.AddOracleDb(builder.Configuration);
+builder.Services.AddOracleDb(builder.Configuration, out var connectionString);
 
 // register scoped services
 builder.Services.AddScoped<IPersonService, PersonService>();
 builder.Services.AddScoped<IPublicationService, PublicationService>();
 
 var app = builder.Build();
+
+// Warm up Oracle connection pool during startup (non-blocking)
+LaunchConnectionPoolWarmup(app.Services, connectionString, app.Environment.IsDevelopment());
 
 app.UseHttpsRedirection();
 app.UseAuthorization();
@@ -73,4 +76,23 @@ static bool IsDurationLoggingEnabled(WebApplication app)
         "1" or "true" or "yes" or "on" => true,
         _ => false,
     };
+}
+
+/// <summary>
+/// Non-blocking launch of connection pool warm-up
+/// <summary/>
+static void LaunchConnectionPoolWarmup(IServiceProvider services, string connectionString, bool logDetails)
+{
+    _ = Task.Run(async () =>
+    {
+        try
+        {
+            await services.WarmUpOracleConnectionPoolAsync(connectionString, logDetails);
+        }
+        catch (Exception ex)
+        {
+            var logger = services.GetRequiredService<ILogger<Program>>();
+            logger.LogError(ex, "Connection pool warm-up failed during startup");
+        }
+    });
 }
