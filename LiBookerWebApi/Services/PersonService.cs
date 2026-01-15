@@ -6,15 +6,15 @@ namespace LiBookerWebApi.Services
 {
     public class PersonService : IPersonService
     {
-        private readonly AppDbContext _db;
+        private readonly LiBookerDbContext _db;
 
-        public PersonService(AppDbContext db) => this._db = db;
+        public PersonService(LiBookerDbContext db) => this._db = db;
 
-        public async Task<List<PersonDto>> GetAllAsync(CancellationToken ct = default)
+        public async Task<List<Person>> GetAllAsync(CancellationToken ct = default)
         {
             return await _db.Persons
                 .AsNoTracking()
-                .Select(p => new PersonDto
+                .Select(p => new Person
                 {
                     Id = p.Id,
                     FirstName = p.FirstName,
@@ -30,12 +30,12 @@ namespace LiBookerWebApi.Services
                 .ToListAsync(ct);
         }
 
-        public async Task<PersonDto?> GetByIdAsync(int id, CancellationToken ct = default)
+        public async Task<Person?> GetByIdAsync(int id, CancellationToken ct = default)
         {
             return await _db.Persons
                 .AsNoTracking()
                 .Where(p => p.Id == id)
-                .Select(p => new PersonDto
+                .Select(p => new Person
                 {
                     Id = p.Id,
                     FirstName = p.FirstName,

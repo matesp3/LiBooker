@@ -1,6 +1,6 @@
 namespace LiBooker.Shared.DTOs
 {
-    public sealed record PersonDto
+    public sealed record Person
     {
         public int Id { get; init; }
         public required string FirstName { get; init; }

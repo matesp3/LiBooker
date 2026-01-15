@@ -20,6 +20,7 @@ builder.Services.AddOracleDb(builder.Configuration, out var connectionString);
 // register scoped services
 builder.Services.AddScoped<IPersonService, PersonService>();
 builder.Services.AddScoped<IPublicationService, PublicationService>();
+builder.Services.AddScoped<IMatchSearchService, MatchSearchService>();
 
 var app = builder.Build();
 
@@ -32,6 +33,7 @@ app.UseAuthorization();
 bool logDuration = IsDurationLoggingEnabled(app);
 app.MapPersonEndpoints();
 app.MapPublicationEndpoints(logDuration);
+app.MapMatchSearchEndpoint(logDuration);
 
 if (app.Environment.IsDevelopment())
 {

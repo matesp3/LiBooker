@@ -1,6 +1,6 @@
 namespace LiBooker.Shared.DTOs
 {
-    public class PublicationImageDto
+    public class PublicationImage
     {
         public int ImageId { get; set; }
         public required byte[] ImageData { get; set; }

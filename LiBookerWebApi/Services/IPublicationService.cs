@@ -15,7 +15,7 @@ namespace LiBookerWebApi.Services
         Task<PublicationMainInfo?> GetByIdAsync(int publicationId, CancellationToken ct = default);
         
         // Returns images mapped by image ID: Dictionary<imageId, imageBytes>
-        Task<List<PublicationImageDto>> GetPublicationImagesByIdsAsync(int[] ids, CancellationToken ct);
+        Task<List<PublicationImage>> GetPublicationImagesByIdsAsync(int[] ids, CancellationToken ct);
         Task<int> GetPublicationsCountAsync(CancellationToken ct);
     }
 }

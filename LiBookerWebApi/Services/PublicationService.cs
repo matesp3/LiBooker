@@ -7,14 +7,9 @@ using static LiBooker.Shared.EndpointParams.PublicationParams;
 namespace LiBookerWebApi.Services
 {
     // Service that loads publications and maps them to PublicationMainInfo DTOs.
-    public class PublicationService : IPublicationService
+    public class PublicationService(LiBookerDbContext db) : IPublicationService
     {
-        private readonly AppDbContext _db;
-
-        public PublicationService(AppDbContext db)
-        {
-            _db = db;
-        }
+        private readonly LiBookerDbContext _db = db;
 
         public async Task<PublicationMainInfo?> GetByIdAsync(int publicationId, CancellationToken ct = default)
         {
@@ -53,12 +48,12 @@ namespace LiBookerWebApi.Services
             };
         }
 
-        public async Task<List<PublicationImageDto>> GetPublicationImagesByIdsAsync(int[] ids, CancellationToken ct)
+        public async Task<List<PublicationImage>> GetPublicationImagesByIdsAsync(int[] ids, CancellationToken ct)
         {
             return await _db.CoverImages
                 .AsNoTracking()
                 .Where(img => ids.Contains(img.Id))
-                .Select(img => new PublicationImageDto
+                .Select(img => new PublicationImage
                 { 
                     ImageId = img.Id,
                     ImageData = img.Image

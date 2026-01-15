@@ -3,9 +3,9 @@ using LiBookerWebApi.Models.Entities;
 
 namespace LiBookerWebApi.Model
 {
-    public class AppDbContext : DbContext
+    public class LiBookerDbContext : DbContext
     {
-        public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
+        public LiBookerDbContext(DbContextOptions<LiBookerDbContext> options) : base(options)
         {
         }
 

@@ -12,7 +12,7 @@ namespace LiBookerWebApi.Infrastructure
         /// </summary>
         /// <remarks>This method reads Oracle database connection settings from the "Oracle" section of
         /// the provided <paramref name="configuration"/>. It sets up the necessary environment variables for Oracle
-        /// wallet-based authentication and registers <see cref="AppDbContext"/> with the dependency injection
+        /// wallet-based authentication and registers <see cref="LiBookerDbContext"/> with the dependency injection
         /// container, configured to use Oracle Database 19 compatibility. <para> The "Oracle" configuration section
         /// must contain the following keys: "WalletPath", "UserId", "Password", and "TnsAlias". </para></remarks>
         /// <param name="services">The <see cref="IServiceCollection"/> to which the Oracle database context will be added.</param>
@@ -61,7 +61,7 @@ namespace LiBookerWebApi.Infrastructure
             var connString = connectionString; // copy because of 'out' parameter, which cannot be passed to anonymous func
 
             // Register a DbContext factory (singleton-friendly)
-            services.AddDbContextFactory<AppDbContext>(options =>
+            services.AddDbContextFactory<LiBookerDbContext>(options =>
             {
                 options.UseOracle(
                     connString,
@@ -71,10 +71,10 @@ namespace LiBookerWebApi.Infrastructure
                     });
             });
 
-            // Provide a scoped AppDbContext created from the factory for normal request-scoped DI consumers.
+            // Provide a scoped LiBookerDbContext created from the factory for normal request-scoped DI consumers.
             services.AddScoped(provider =>
             {
-                var factory = provider.GetRequiredService<IDbContextFactory<AppDbContext>>();
+                var factory = provider.GetRequiredService<IDbContextFactory<LiBookerDbContext>>();
                 return factory.CreateDbContext();
             });
             // scoped means one instance per request
@@ -128,8 +128,8 @@ namespace LiBookerWebApi.Infrastructure
     }
 
     /*
-     * When to inject AppDbContext (scoped) vs. use the factory
-        • Endpoints (HTTP request handlers) and other request-scoped services: continue injecting AppDbContext directly (scoped). This keeps lambdas simple and aligns with DI scope.
+     * When to inject LiBookerDbContext (scoped) vs. use the factory
+        • Endpoints (HTTP request handlers) and other request-scoped services: continue injecting LiBookerDbContext directly (scoped). This keeps lambdas simple and aligns with DI scope.
         • Background services, singletons, worker threads, or any code that outlives the request scope: use IDbContextFactory<TContext>.
        Best practices
         • Dispose contexts promptly (use using / await using).

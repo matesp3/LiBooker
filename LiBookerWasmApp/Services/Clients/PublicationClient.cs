@@ -94,7 +94,7 @@ namespace LiBookerWasmApp.Services.Clients
         /// <param name="imageIds">Image IDs that are cached within publication DTO</param>
         /// <param name="ct"></param>
         /// <returns></returns>
-        public async Task<ApiResponse<List<PublicationImageDto>>> GetImagesAsync(List<int> imageIds, CancellationToken ct = default)
+        public async Task<ApiResponse<List<PublicationImage>>> GetImagesAsync(List<int> imageIds, CancellationToken ct = default)
         {
             try
             {
@@ -103,21 +103,21 @@ namespace LiBookerWasmApp.Services.Clients
                 if (res.IsSuccessStatusCode)
                 {
                     var data = await res.Content.
-                        ReadFromJsonAsync<List<PublicationImageDto>>(cancellationToken: ct).ConfigureAwait(false) ?? [];
-                    return ApiResponse<List<PublicationImageDto>>.Success(data);
+                        ReadFromJsonAsync<List<PublicationImage>>(cancellationToken: ct).ConfigureAwait(false) ?? [];
+                    return ApiResponse<List<PublicationImage>>.Success(data);
                 }
                 if (res.StatusCode == System.Net.HttpStatusCode.NotFound)
-                    return ApiResponse<List<PublicationImageDto>>.Fail("Not found", (int)res.StatusCode);
+                    return ApiResponse<List<PublicationImage>>.Fail("Not found", (int)res.StatusCode);
                 var textFallback = await res.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
-                return ApiResponse<List<PublicationImageDto>>.Fail($"Server returned {(int)res.StatusCode}: {textFallback}", (int)res.StatusCode);
+                return ApiResponse<List<PublicationImage>>.Fail($"Server returned {(int)res.StatusCode}: {textFallback}", (int)res.StatusCode);
             }
             catch (OperationCanceledException)
             {
-                return ApiResponse<List<PublicationImageDto>>.Fail("Request cancelled");
+                return ApiResponse<List<PublicationImage>>.Fail("Request cancelled");
             }
             catch (Exception ex)
             {
-                return ApiResponse<List<PublicationImageDto>>.Fail($"Request failed: {ex.Message}");
+                return ApiResponse<List<PublicationImage>>.Fail($"Request failed: {ex.Message}");
             }
         }
 

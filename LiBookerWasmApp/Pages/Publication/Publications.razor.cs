@@ -10,21 +10,40 @@ namespace LiBookerWasmApp.Pages.Publication
         [Inject]
         public required PublicationClient PublicationClient { get; set; }
 
-        private const int ImageBatchSize = 3; // Load 3 images at a time
+        /// <summary>Load 3 images at a time</summary>
+        private const int ImageBatchSize = 3;
+        private const int pageSize = 15;
+
         private bool isLoading;
         private bool isLoadingImages;
         private int currentPage = 1;
         private int imagesLoaded;
-        /// <summary>
-        /// Max publications per page
-        /// </summary>
-        private int pageSize = 15;
         private int totalPublications = 0;
         private string? error = null;
         private string filterAvailability = "all"; // Filter state
         private string filterSort = "none"; // Sort state
         private CancellationTokenSource? cts = null;
         private List<PublicationMainInfo>? publications;
+
+        // Search specific fields
+        private string _searchTerm = "";
+        private System.Timers.Timer? _debounceTimer;
+        private List<PublicationMainInfo> searchResults = new();
+        private bool showSearchResults = false;
+        private bool isSearching = false;
+
+        public string SearchTerm
+        {
+            get => this._searchTerm;
+            set
+            {
+                _searchTerm = value;
+                OnSearchInput(); // Trigger debounce on every keystroke
+            }
+        }
+
+        /// <summary>Max publications per page</summary>
+        public static int PageSize => pageSize;
 
         protected override async Task OnInitializedAsync()
         {
@@ -49,7 +68,7 @@ namespace LiBookerWasmApp.Pages.Publication
             // ---------------- new request ----------------
             // Step 1: Load publications WITHOUT images (fast - for better UX)
 
-            var result = await PublicationClient.GetAllAsync(this.currentPage, this.pageSize,
+            var result = await PublicationClient.GetAllAsync(this.currentPage, PageSize,
                 PublicationParams.ParseAvailabilityParam(this.filterAvailability),
                 PublicationParams.ParseSortParam(this.filterSort),
                 this.cts.Token);
@@ -150,10 +169,81 @@ namespace LiBookerWasmApp.Pages.Publication
             }
         }
 
+        private void OnSearchInput()
+        {
+            // Reset timer
+            this._debounceTimer?.Stop();
+            this._debounceTimer?.Dispose();
+
+            if (string.IsNullOrWhiteSpace(_searchTerm))
+            {
+                this.searchResults.Clear();
+                this.showSearchResults = false;
+                return;
+            }
+
+            this.showSearchResults = true;
+            this.isSearching = true;
+
+            // Set new timer for 300ms
+            this._debounceTimer = new System.Timers.Timer(300);
+            this._debounceTimer.AutoReset = false;
+            this._debounceTimer.Elapsed += async (sender, args) => 
+            {
+                await InvokeAsync(async () => await PerformSearch());
+            };
+            this._debounceTimer.Start();
+        }
+
+        private async Task PerformSearch()
+        {
+            try
+            {
+                // Call API with size limit 5 for dropdown
+                //var result = await PublicationClient.GetAllAsync(1, 5, _searchTerm);
+                
+                //if (result.IsSuccess)
+                //{
+                //    this.searchResults = result.Data ?? new();
+                //}
+                this.searchResults = new List<PublicationMainInfo>
+                {
+                    new PublicationMainInfo { Title = "Sample Book 1", Author = "Author A", Publication = "Publisher X", Year = 2020 },
+                    new PublicationMainInfo { Title = "Sample Book 2", Author = "Author B", Publication = "Publisher Y", Year = 2019 },
+                    new PublicationMainInfo { Title = "Sample Book 3", Author = "Author C", Publication = "Publisher Z", Year = 2021 },
+                };
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Search error: {ex.Message}");
+            }
+            finally
+            {
+                isSearching = false;
+                StateHasChanged();
+            }
+        }
+        
+        // Using onmousedown instead of onclick because blur happens before click
+        private void SelectSearchResult(int publicationId)
+        {
+            // Navigate to details or filter the main grid
+            // NavigationManager.NavigateTo($"/publications/{publicationId}");
+            Console.WriteLine($"Selected: {publicationId}");
+        }
+
+        private async Task OnSearchBlur()
+        {
+            // Give time for click event to register before hiding
+            await Task.Delay(200);
+            showSearchResults = false;
+        }
+
         public void Dispose()
         {
             this.cts?.Cancel();
             this.cts?.Dispose();
+            this._debounceTimer?.Dispose();
         }
     }
 }

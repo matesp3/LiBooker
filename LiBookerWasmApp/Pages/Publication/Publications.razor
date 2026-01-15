@@ -2,6 +2,55 @@
 
 <h3>Publications</h3>
 
+<div class="row mb-3">
+    <div class="col-md-6 offset-md-3">
+        <div class="input-group dropdown">
+            <span class="input-group-text bg-white border-end-0">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-search" viewBox="0 0 16 16">
+                    <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z" />
+                </svg>
+            </span>
+
+            <input type="text"
+                   class="form-control border-start-0"
+                   placeholder="Search title / author / genre..."
+                   @bind="SearchTerm"
+                   @bind:event="oninput"
+                   @onfocus="() => this.showSearchResults = true"
+                   @onblur="OnSearchBlur"
+                   aria-expanded="@(this.showSearchResults ? "true" : "false")"
+                   autocomplete="off" />
+
+            <ul class="dropdown-menu w-100 shadow @(this.showSearchResults && !string.IsNullOrEmpty(this.SearchTerm) ? "show" : "")"
+                style="max-height: 300px; overflow-y: auto;">
+
+                @if (this.isSearching)
+                {
+                    <li><span class="dropdown-item-text text-muted text-center">Searching...</span></li>
+                }
+                else if (this.searchResults.Any())
+                {
+                    @foreach (var result in this.searchResults)
+                    {
+                        <li>
+                            <button class="dropdown-item" type="button" @onmousedown="() => SelectSearchResult(result.ImageId)">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1 text-truncate" style="max-width: 70%;">@result.Title</h6>
+                                    <small class="text-muted">@result.Year</small>
+                                </div>
+                                <small class="text-muted d-block text-truncate">@result.Author</small>
+                            </button>
+                        </li>
+                    }
+                }
+                else
+                {
+                    <li><span class="dropdown-item-text text-muted text-center">No books found.</span></li>
+                }
+            </ul>
+        </div>
+    </div>
+</div>
 
 <div class="row mb-4">
     <div class="col-md-4 col-sm-6 mb-2">
@@ -87,7 +136,7 @@ else
         }
     </div>
 
-    var totalPages = (int)Math.Ceiling(this.totalPublications / (1.0 * Math.Max(this.pageSize, 1) ));
+    var totalPages = (int)Math.Ceiling(this.totalPublications / (1.0 * Math.Max(PageSize, 1) ));
     
     <div class="pagination-container">
         <button class="btn btn-primary" @onclick="PreviousPage" disabled="@(this.currentPage <= 1 || this.isLoading)">
