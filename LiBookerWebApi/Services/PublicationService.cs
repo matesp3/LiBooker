@@ -56,7 +56,7 @@ namespace LiBookerWebApi.Services
                 .Select(img => new PublicationImage
                 { 
                     ImageId = img.Id,
-                    ImageData = img.Image
+                    RawImage = img.Image
                 }
                 ).ToListAsync(ct);
         }

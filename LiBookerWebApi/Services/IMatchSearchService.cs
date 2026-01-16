@@ -1,5 +1,5 @@
 ﻿
-using LiBookerShared.DTOs;
+using LiBooker.Shared.DTOs;
 
 namespace LiBookerWebApi.Services
 {

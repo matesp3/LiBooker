@@ -1,7 +1,8 @@
-﻿using LiBookerShared.DTOs;
+﻿using LiBooker.Shared.DTOs;
 using LiBookerWebApi.Model;
 using LinqKit; // For PredicateBuilder [OR] and .Expand()
 using Microsoft.EntityFrameworkCore;
+using System.Threading.Tasks;
 
 namespace LiBookerWebApi.Services
 {
@@ -19,31 +20,34 @@ namespace LiBookerWebApi.Services
 
             var results = new List<FoundMatch>();
 
-            List<string> res = await SearchBooksAsync(tokens, queryString, ct);
-            results.AddRange(res.Select(title => new FoundMatch
-            { Match = title, Type = FoundMatch.MatchType.Title }));
+            var res1 = await SearchBooksAsync(tokens, queryString, ct);
+            results.AddRange(res1);
 
-            res = await SearchAuthorsAsync(tokens, queryString,  ct);
-            results.AddRange(res.Select(name => new FoundMatch
-            { Match = name, Type = FoundMatch.MatchType.Author }));
+            var res2 = await SearchAuthorsAsync(tokens, queryString,  ct);
+            results.AddRange(res2);
 
-            res = await SearchGenresAsync(tokens, queryString, ct);
-            results.AddRange(res.Select(genre => new FoundMatch
-            { Match = genre, Type = FoundMatch.MatchType.Genre }));
+            var res3 = await SearchGenresAsync(tokens, queryString, ct);
+            results.AddRange(res3);
 
             return results;
         }
 
-        private async Task<List<string>> SearchBooksAsync(IEnumerable<string> tokens, string queryString, CancellationToken ct)
+        private async Task<List<BookMatch>> SearchBooksAsync(IEnumerable<string> tokens, string queryString, CancellationToken ct)
         {
-            var res = await _db.Books
+            var res1 = await _db.Books
                 .Where(b => b.Title.ToLower().Contains(queryString.ToLower()))
-                .Select(b => b.Title)
+                .Select(b => new BookMatch{
+                    Id = b.Id,
+                    Title = b.Title,
+                    Authors = string.Join(", ", b.BookAuthors
+                        .Select(ba => ba.Author != null ? ba.Author.FirstName + " " + ba.Author.LastName : "Unknown author"))
+                })
                 .Take(MaxResultsPerCategory)
                 .ToListAsync(ct);
+            //await MapAuthors(res1, ct);
 
-            if (res.Count >= MaxResultsPerCategory)
-                return res;
+            if (res1.Count >= MaxResultsPerCategory)
+                return res1;
 
             var predicate = PredicateBuilder.New<Models.Entities.Book>(false);
 
@@ -55,15 +59,22 @@ namespace LiBookerWebApi.Services
 
             var res2 = await _db.Books
                 .Where((System.Linq.Expressions.Expression<Func<Models.Entities.Book, bool>>)predicate.Expand())
-                .Select(b => b.Title)
-                .Take(MaxResultsPerCategory - res.Count)
+                .Select(b => new BookMatch
+                {
+                    Id = b.Id,
+                    Title = b.Title,
+                    Authors = string.Join(", ", b.BookAuthors
+                        .Select(ba => ba.Author != null ? ba.Author.FirstName + " " + ba.Author.LastName : "Unknown author"))
+                })
+                .Take(MaxResultsPerCategory - res1.Count)
                 .ToListAsync(ct);
+            //await MapAuthors(res2, ct);
 
-            res.AddRange(res2);
-            return res;
+            res1.AddRange(res2);
+            return res1;
         }
 
-        private async Task<List<string>> SearchAuthorsAsync(IEnumerable<string> tokens, string queryString, CancellationToken ct)
+        private async Task<List<AuthorMatch>> SearchAuthorsAsync(IEnumerable<string> tokens, string queryString, CancellationToken ct)
         {
             var predicate = PredicateBuilder.New<Models.Entities.Author>(false)
                             .Or(a => EF.Functions.Like(a.FirstName.ToLower(), queryString))
@@ -76,12 +87,15 @@ namespace LiBookerWebApi.Services
             }
             return await _db.Authors
                 .Where(predicate.Expand())
-                .Select(a => $"{a.FirstName} {a.LastName}")
+                .Select(a => new AuthorMatch {
+                    Id = a.Id,
+                    FullName = $"{a.FirstName} {a.LastName}"
+                })
                 .Take(MaxResultsPerCategory)
                 .ToListAsync(ct);
         }
 
-        private async Task<List<string>> SearchGenresAsync(IEnumerable<string> tokens, string queryString, CancellationToken ct)
+        private async Task<List<GenreMatch>> SearchGenresAsync(IEnumerable<string> tokens, string queryString, CancellationToken ct)
         {
             var predicate = PredicateBuilder.New<Models.Entities.Genre>(false)
                             .Or(g => EF.Functions.Like(g.Name.ToLower(), queryString));
@@ -92,9 +106,34 @@ namespace LiBookerWebApi.Services
             }
             return await _db.Genres
                 .Where(predicate.Expand())
-                .Select(g => g.Name)
+                .Select(g => new GenreMatch
+                {
+                    Id = g.Id,
+                    Name = g.Name,
+                })
                 .Take(MaxResultsPerCategory)
                 .ToListAsync(ct);
+        }
+
+        private async Task MapAuthors(List<BookMatch> books, CancellationToken ct)
+        {
+            if (books.Count == 0)
+                return;
+            var r = await _db.BookAuthors
+                .Where(ba => books.Select(b => b.Id).Contains(ba.BookId))
+                .Select(ba => new
+                {
+                    ba.BookId,
+                    AuthorFullName = ba.Author != null ? ba.Author.FirstName + " " + ba.Author.LastName : "Unknown author"
+                })
+                .ToListAsync(ct);
+
+            foreach (var book in books)
+            {
+                var authors = r.Where(x => x.BookId == book.Id)
+                               .Select(x => x.AuthorFullName);
+                book.Authors = string.Join(", ", authors);
+            }
         }
     }
 }

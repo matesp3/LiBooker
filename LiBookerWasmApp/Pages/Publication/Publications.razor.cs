@@ -10,34 +10,35 @@ namespace LiBookerWasmApp.Pages.Publication
         [Inject]
         public required PublicationClient PublicationClient { get; set; }
 
-        /// <summary>Load 3 images at a time</summary>
+        /// <summary>Load 3 imageData at a time</summary>
         private const int ImageBatchSize = 3;
         private const int pageSize = 15;
 
         private bool isLoading;
         private bool isLoadingImages;
+        private bool isSearching = false;
+        private bool showSearchResults = false;
         private int currentPage = 1;
         private int imagesLoaded;
-        private int totalPublications = 0;
+        private int totalPublications = -1;
         private string? error = null;
         private string filterAvailability = "all"; // Filter state
         private string filterSort = "none"; // Sort state
-        private CancellationTokenSource? cts = null;
+        private string searchTerm = "";
+
+        private System.Timers.Timer? debounceTimer;
+        private List<FoundMatch> searchResults = [];
         private List<PublicationMainInfo>? publications;
 
-        // Search specific fields
-        private string _searchTerm = "";
-        private System.Timers.Timer? _debounceTimer;
-        private List<PublicationMainInfo> searchResults = new();
-        private bool showSearchResults = false;
-        private bool isSearching = false;
+        private CancellationTokenSource? publicationsCts = null;
+        private CancellationTokenSource? searchCts = null;
 
         public string SearchTerm
         {
-            get => this._searchTerm;
+            get => this.searchTerm;
             set
             {
-                _searchTerm = value;
+                searchTerm = value;
                 OnSearchInput(); // Trigger debounce on every keystroke
             }
         }
@@ -56,55 +57,115 @@ namespace LiBookerWasmApp.Pages.Publication
             await LoadPublications();
         }
 
-        private async Task LoadPublications()
+        private void PrepareForNewLoad(out CancellationToken newToken)
         {
-            this.cts?.Cancel(); // if there is an ongoing load, cancel it
-            this.cts?.Dispose();
-            // ---------------- reset ----------------
-            this.cts = new CancellationTokenSource();
+            // cancel previous operations if running
+            this.publicationsCts?.Cancel();
+            this.publicationsCts?.Dispose();
+
+            // create new token source
+            this.publicationsCts = new CancellationTokenSource();
+            newToken = this.publicationsCts.Token;
+
+            // reset UI flags & state for new load
             this.isLoading = true;
             this.error = null;
             this.imagesLoaded = 0;
-            // ---------------- new request ----------------
-            // Step 1: Load publications WITHOUT images (fast - for better UX)
+            this.publications = null; // clearing old list immediately to show spinner only
+        }
 
-            var result = await PublicationClient.GetAllAsync(this.currentPage, PageSize,
-                PublicationParams.ParseAvailabilityParam(this.filterAvailability),
-                PublicationParams.ParseSortParam(this.filterSort),
-                this.cts.Token);
-
-            this.isLoading = false;
-
-            if (result.IsSuccess)
+        private async Task LoadPublications()
+        {
+            this.PrepareForNewLoad(out var currentToken);
+            try 
             {
-                this.publications = result.Data;
-                
-                StateHasChanged(); // Update UI immediately with metadata
+                // ---------------- new request ----------------
+                if (this.totalPublications < 0) // only load count if not loaded yet
+                    _ = LoadPublicationsCountAsync(currentToken); // fire and forget count load
 
-                this.totalPublications = await PublicationClient.GetPublicationsCountAsync(this.cts.Token);
-                StateHasChanged();
+                // load publications WITHOUT imageData (fast - for better UX)
+                var result = await PublicationClient.GetPublicationsAsync(this.currentPage, PageSize,
+                        PublicationParams.ParseAvailabilityParam(this.filterAvailability),
+                        PublicationParams.ParseSortParam(this.filterSort),
+                        currentToken);
 
-                // Step 2: Load images progressively in batches
-                if (this.publications != null && this.publications.Count > 0)
+                // if cancelled in the meantime, stop immediately without error
+                if (currentToken.IsCancellationRequested) return;
+
+                this.isLoading = false;
+
+                if (result.IsSuccess)
                 {
-                    _ = LoadImagesProgressively(this.cts.Token); // Fire and forget
+                    this.publications = result.Data;
+                    StateHasChanged(); // Update UI immediately with metadata
+
+                    // Step 2: Load imageData progressively in batches
+                    if (this.publications != null && this.publications.Count > 0)
+                       _ = LoadImagesProgressively(currentToken); // fire and forget with the same token
+                }
+                else
+                {
+                    // Check if this is just a cancellation
+                    if (!result.IsCancelled) 
+                    {
+                        this.error = result.Error;
+                    }
                 }
             }
-            else
+            catch (OperationCanceledException)
             {
-                this.error = result.Error ?? "Unknown error";
+                // CORRECT BEHAVIOR: Do nothing. The user started a new action, 
+                // so the old one being cancelled is expected and NOT an error.
+            }
+            catch (Exception ex)
+            {
+               // Real error
+               this.error = $"Unexpected error: {ex.Message}";
+               this.isLoading = false;
+            }
+            finally
+            {
+                // Only turn off loading if we are NOT cancelled (if cancelled, new load is taking over)
+                if (!currentToken.IsCancellationRequested)
+                {
+                   // StateHasChanged(); // Optional if needed here, usually handled above
+                }
+            }
+        }
+
+        private async Task LoadPublicationsCountAsync(CancellationToken token = default)
+        {
+            try
+            {
+                var result = await PublicationClient.GetPublicationsCountAsync(token);
+                if (result.IsSuccess)
+                {
+                    this.totalPublications = result.Data;
+                    StateHasChanged();
+                }
+                else if (result.IsCancelled)
+                {
+                    // Do nothing, operation was cancelled
+                }
+                else
+                {
+                    this.error = result.Error ?? "Unknown error";
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error loading publications count: {ex.Message}");
             }
         }
         private async Task LoadImagesProgressively(CancellationToken ct)
         {
-            if (this.publications == null || this.publications.Count == 0) return;
-
+            if (this.publications == null || this.publications.Count == 0)
+                return;
             this.isLoadingImages = true;
             StateHasChanged();
-
             try
             {
-                // Load images in batches of ImageBatchSize
+                // Load imageData in batches of ImageBatchSize
                 for (int i = 0; i < this.publications.Count; i += ImageBatchSize)
                 {
                     if (ct.IsCancellationRequested) break;
@@ -114,24 +175,15 @@ namespace LiBookerWasmApp.Pages.Publication
 
                     var imageResult = await PublicationClient.GetImagesAsync(ids, ct);
 
-                    if (imageResult.IsSuccess && imageResult.Data != null)
+                    if (imageResult.IsSuccess)
+                        UpdateWithNewImages(batch, imageResult.Data);
+                    else
                     {
-                        var pairs = imageResult.Data.ToDictionary(data => data.ImageId, data => data.ImageData);
-                        Console.WriteLine($"Loaded batch of {pairs.Count} images.");
-                        // Update publications with loaded images
-                        foreach (var pub in batch)
-                        {
-                            if (pairs.TryGetValue(pub.ImageId, out var imageData))
-                            {
-                                pub.Image = imageData;
-                                this.imagesLoaded++;
-                            }
-                        }
-                        StateHasChanged(); // Update UI after each batch
+                        if (imageResult.IsCancelled)
+                            return; // do nothing
+                        this.error = imageResult.Error ?? "Unknown error";
                     }
-
-                    // Small delay between batches to avoid overwhelming the server
-                    await Task.Delay(100, ct);
+                    await Task.Delay(100, ct); // Small delay between batches to avoid overwhelming the server
                 }
             }
             catch (OperationCanceledException)
@@ -145,13 +197,22 @@ namespace LiBookerWasmApp.Pages.Publication
             }
         }
 
-        private string GetImageDataUrl(byte[]? imageData)
+        private void UpdateWithNewImages(List<PublicationMainInfo> batch, List<PublicationImage>? imageData)
         {
-            if (imageData == null || imageData.Length == 0)
-                return string.Empty;
-
-            var base64 = Convert.ToBase64String(imageData);
-            return $"data:image/jpeg;base64,{base64}";
+            if (imageData == null || imageData.Count == 0)
+                return;
+            var pairs = imageData.ToDictionary(data => data.ImageId, data => data.RawImage);
+            //Console.WriteLine($"Loaded batch of {pairs.Count} imageData.");
+            // Update publications with loaded imageData
+            foreach (var pub in batch)
+            {
+                if (pairs.TryGetValue(pub.ImageId, out var imageBytes))
+                {
+                    pub.Image = imageBytes;
+                    this.imagesLoaded++;
+                }
+            }
+            StateHasChanged(); // Update UI after each batch
         }
 
         private async Task NextPage()
@@ -172,10 +233,10 @@ namespace LiBookerWasmApp.Pages.Publication
         private void OnSearchInput()
         {
             // Reset timer
-            this._debounceTimer?.Stop();
-            this._debounceTimer?.Dispose();
+            this.debounceTimer?.Stop();
+            this.debounceTimer?.Dispose();
 
-            if (string.IsNullOrWhiteSpace(_searchTerm))
+            if (string.IsNullOrWhiteSpace(this.searchTerm))
             {
                 this.searchResults.Clear();
                 this.showSearchResults = false;
@@ -186,41 +247,50 @@ namespace LiBookerWasmApp.Pages.Publication
             this.isSearching = true;
 
             // Set new timer for 300ms
-            this._debounceTimer = new System.Timers.Timer(300);
-            this._debounceTimer.AutoReset = false;
-            this._debounceTimer.Elapsed += async (sender, args) => 
+            this.debounceTimer = new System.Timers.Timer(300);
+            this.debounceTimer.AutoReset = false;
+            this.debounceTimer.Elapsed += async (sender, args) => 
             {
-                await InvokeAsync(async () => await PerformSearch());
+                await InvokeAsync(async () => await PerformSearch(this.searchTerm));
             };
-            this._debounceTimer.Start();
+            this.debounceTimer.Start();
         }
 
-        private async Task PerformSearch()
+        private async Task PerformSearch(string searchTerm) // Assuming you have logic here
         {
+            // Cancel previous search
+            this.searchCts?.Cancel();
+            this.searchCts?.Dispose();
+            this.searchCts = new CancellationTokenSource();
+            var token = this.searchCts.Token;
+
+            // set flags
+            this.isSearching = true;
+
             try
             {
-                // Call API with size limit 5 for dropdown
-                //var result = await PublicationClient.GetAllAsync(1, 5, _searchTerm);
-                
-                //if (result.IsSuccess)
-                //{
-                //    this.searchResults = result.Data ?? new();
-                //}
-                this.searchResults = new List<PublicationMainInfo>
+                // Debounce simple implementation (wait for typing to stop)
+                await Task.Delay(300, token); 
+
+                var result = await PublicationClient.GetAllSearchMatchesAsync(searchTerm, token);
+
+                if (!token.IsCancellationRequested && result.IsSuccess)
                 {
-                    new PublicationMainInfo { Title = "Sample Book 1", Author = "Author A", Publication = "Publisher X", Year = 2020 },
-                    new PublicationMainInfo { Title = "Sample Book 2", Author = "Author B", Publication = "Publisher Y", Year = 2019 },
-                    new PublicationMainInfo { Title = "Sample Book 3", Author = "Author C", Publication = "Publisher Z", Year = 2021 },
-                };
+                    this.searchResults = result.Data ?? [];
+                    this.showSearchResults = true;
+                }
             }
-            catch (Exception ex)
+            catch (OperationCanceledException)
             {
-                Console.WriteLine($"Search error: {ex.Message}");
+                // Ignored - superseded by new character typed
             }
             finally
             {
-                isSearching = false;
-                StateHasChanged();
+                if (!token.IsCancellationRequested)
+                {
+                    this.isSearching = false;
+                    StateHasChanged();
+                }
             }
         }
         
@@ -232,18 +302,60 @@ namespace LiBookerWasmApp.Pages.Publication
             Console.WriteLine($"Selected: {publicationId}");
         }
 
+        private void SelectSearchResultItem(FoundMatch match)
+        {
+            if (match is BookMatch book)
+            {
+                //Console.WriteLine($"Selected Book: {book.Title}");
+                //NavigationManager.NavigateTo($"/publication/{book.Id}");
+            }
+            else if (match is AuthorMatch author)
+            {
+                 // Logika pre autora (napr. nastavenie filtra do searchbaru)
+                 this.SearchTerm = author.FullName;
+                 // PerformSearch(); // spustiť vyhľadávanie pre autora
+            }
+            else if (match is GenreMatch genre)
+            {
+                 this.SearchTerm = genre.Name;
+            }
+
+            this.showSearchResults = false;
+        }
+
         private async Task OnSearchBlur()
         {
             // Give time for click event to register before hiding
             await Task.Delay(200);
-            showSearchResults = false;
+            this.showSearchResults = false;
+        }
+
+        private void ClearSearch()
+        {
+            this.SearchTerm = string.Empty;
+            this.showSearchResults = false;
+            this.searchResults.Clear();
+            // Optionally reload original list or focus input here
+            StateHasChanged();
         }
 
         public void Dispose()
         {
-            this.cts?.Cancel();
-            this.cts?.Dispose();
-            this._debounceTimer?.Dispose();
+            // Dispose ALL cancellation sources
+            this.publicationsCts?.Cancel();
+            this.publicationsCts?.Dispose();
+
+            this.searchCts?.Cancel();
+            this.searchCts?.Dispose();
+        }
+
+        private static string GetImageDataUrl(byte[]? imageData)
+        {
+            if (imageData == null || imageData.Length == 0)
+                return string.Empty;
+
+            var base64 = Convert.ToBase64String(imageData);
+            return $"data:image/jpeg;base64,{base64}";
         }
     }
 }
