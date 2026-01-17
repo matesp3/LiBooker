@@ -9,26 +9,60 @@ main {
 }
 
 .sidebar {
-    background-image: linear-gradient(180deg, rgb(5, 39, 103) 0%, #3a0647 70%);
+    /* dark deep blue gradient */
+    background-image: linear-gradient(180deg, #020d1f 0%, #0a2540 100%);
 }
 
 .top-row {
-    background-color: #f7f7f7;
-    border-bottom: 1px solid #d6d5d5;
+    /* Softer, very light blueish-white background */
+    background-color: #f8fbff;
+    /* Subtler border color to match the soft theme */
+    border-bottom: 1px solid #eef2f6;
     justify-content: flex-end;
     height: 3.5rem;
     display: flex;
     align-items: center;
+    position: sticky; /* Ensure it is a positioning context (if sticky is used) or explicit relative */
+    /* If sticky is removed or changed in media queries, we might need 'position: relative' here to anchor the absolute child */
 }
+
+/* Ensure top-row creates a positioning context */
+.top-row {
+     position: relative; /* Fallback/Base */
+}
+
+/* --- CENTERING LOGIC --- */
+.search-area {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%;
+    max-width: 600px; /* Matches GlobalSearch max-width */
+    display: flex;
+    justify-content: center;
+    pointer-events: none; /* Crucial: allows clicks to pass through to "About" link if search bar area overlaps it transparently */
+    padding: 0 1rem; /* prevent touching edges implementation */
+}
+
+/* Re-enable pointer events for the actual search interaction */
+.search-area ::deep > * {
+    pointer-events: auto;
+}
+/* ----------------------------- */
 
     .top-row ::deep a, .top-row ::deep .btn-link {
         white-space: nowrap;
         margin-left: 1.5rem;
         text-decoration: none;
+        color: #43546b; /* Darker blue-grey text for better readability */
+        position: relative; /* Ensure link sits above if needed, though margins usually handle it */
+        z-index: 1; /* Keep user links clickable above the search layer if they overlap */
     }
 
     .top-row ::deep a:hover, .top-row ::deep .btn-link:hover {
         text-decoration: underline;
+        color: #0d6efd; /* Bootstrap primary blue on hover */
     }
 
     .top-row ::deep a:first-child {
@@ -43,6 +77,14 @@ main {
 
     .top-row ::deep a, .top-row ::deep .btn-link {
         margin-left: 0;
+    }
+    
+    /* On mobile, we might want the search bar to take available space or hide */
+    .search-area {
+         position: static; /* Disable absolute centering on small screens */
+         transform: none;
+         flex-grow: 1;
+         margin-right: 1rem;
     }
 }
 
@@ -61,7 +103,7 @@ main {
     .top-row {
         position: sticky;
         top: 0;
-        z-index: 1;
+        z-index: 10; /* Increased z-index to ensure search dropdown floats above content properly */
     }
 
     .top-row.auth ::deep a:first-child {

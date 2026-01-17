@@ -1,0 +1,118 @@
+<div class="global-search-container">
+    <span class="explore-label">explore</span>
+    
+    <div class="position-relative search-input-wrapper">
+        <div class="input-group">
+            <span class="input-group-text">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-search" viewBox="0 0 16 16">
+                    <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z" />
+                </svg>
+            </span>
+
+            <input type="text"
+                   class="form-control"
+                   placeholder="Search title / author / genre..."
+                   @bind="SearchTerm"
+                   @bind:event="oninput"
+                   @onfocus="() => this.showSearchResults = true"
+                   @onblur="OnSearchBlur"
+                   aria-expanded="@(this.showSearchResults ? "true" : "false")"
+                   autocomplete="off" />
+
+            <!-- Clear Button -->
+            @if (!string.IsNullOrEmpty(this.SearchTerm))
+            {
+                <button class="btn" type="button" @onclick="ClearSearch" title="Clear search">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-x-lg" viewBox="0 0 16 16">
+                        <path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 1 1 .708.708L8.707 8l5.147 5.146a.5.5 0 1 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 1 1-.708-.708L7.293 8 2.146 2.854Z" />
+                    </svg>
+                </button>
+            }
+        </div>
+
+        <ul class="dropdown-menu w-100 shadow @(this.showSearchResults && !string.IsNullOrEmpty(this.SearchTerm) ? "show" : "")"
+            style="max-height: 300px; overflow-y: auto;">
+            
+            @if (this.isSearching)
+            {
+                <li><span class="dropdown-item-text text-muted text-center">Searching...</span></li>
+            }
+            else if (this.searchResults.Any())
+            {
+                // 1. books section
+                var books = this.searchResults.OfType<BookMatch>().ToList();
+                if (books.Any())
+                {
+                    <li><h6 class="dropdown-header font-weight-bold text-uppercase mt-2">Books</h6></li>
+                    @foreach (var book in books)
+                    {
+                        <li>
+                            <button class="dropdown-item search-item d-flex flex-column justify-content-center py-2"
+                                    type="button"
+                                    @onmousedown="() => SelectSearchResultItem(book)">
+                                <div class="d-flex w-100 justify-content-between align-items-center">
+                                    <h6 class="mb-0 text-truncate" style="max-width: 80%;">@book.Title</h6>
+                                </div>
+                                <small class="text-muted d-block text-truncate w-100 mt-1">
+                                    @(string.IsNullOrWhiteSpace(book.Authors) ? "\u00A0" : book.Authors)
+                                </small>
+                            </button>
+                        </li>
+                    }
+                    @if(this.searchResults.OfType<AuthorMatch>().Any() || this.searchResults.OfType<GenreMatch>().Any()) 
+                    { 
+                        <li><hr class="dropdown-divider"></li> 
+                    }
+                }
+
+                // 2. authors section
+                var authors = this.searchResults.OfType<AuthorMatch>().ToList();
+                if (authors.Any())
+                {
+                    <li><h6 class="dropdown-header font-weight-bold text-uppercase mt-2">Authors</h6></li>
+                    @foreach (var author in authors)
+                    {
+                        <li>
+                            <button class="dropdown-item search-item d-flex flex-column justify-content-center py-2"
+                                    type="button"
+                                    @onmousedown="() => SelectSearchResultItem(author)">
+                                <div class="d-flex w-100 justify-content-between align-items-center">
+                                    <h6 class="mb-0 text-truncate">@author.FullName</h6>
+                                </div>
+                                <small class="text-muted d-block mt-1">&nbsp;</small>
+                            </button>
+                        </li>
+                    }
+                    if (this.searchResults.OfType<GenreMatch>().Any())
+                    {
+                        <li><hr class="dropdown-divider"></li>
+                    }
+                }
+
+                // genres section
+                var genres = this.searchResults.OfType<GenreMatch>().ToList();
+                if (genres.Any())
+                {
+                    <li><h6 class="dropdown-header font-weight-bold text-uppercase mt-2">Genres</h6></li>
+                    @foreach (var genre in genres)
+                    {
+                        <li>
+                            <button class="dropdown-item search-item d-flex flex-column justify-content-center py-2"
+                                    type="button"
+                                    @onmousedown="() => SelectSearchResultItem(genre)">
+                                <div class="d-flex w-100 justify-content-between align-items-center">
+                                    <h6 class="mb-0 text-truncate">@genre.Name</h6>
+                                </div>
+                                <small class="text-muted d-block mt-1">&nbsp;</small>
+                            </button>
+                        </li>
+                    }
+                }
+            }
+            else
+            {
+                <li><span class="dropdown-item-text text-muted text-center">No results found.</span></li>
+            }
+        </ul>
+    </div>
+</div>

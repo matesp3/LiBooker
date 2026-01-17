@@ -85,24 +85,3 @@
 .form-select {
     cursor: pointer;
 }
-
-.search-item {
-    height: 60px; /* fixed height for all elements */
-    /* optional for separation */
-    border-bottom: 1px solid #f0f0f0;
-}
-
-.search-item:last-child {
-    border-bottom: none;
-}
-
-.dropdown-header {
-    font-size: 0.75rem;
-    letter-spacing: 0.05em;
-    color: #adb5bd;
-    padding-bottom: 0.25rem;
-}
-
-.dropdown-divider {
-    margin: 0;
-}
