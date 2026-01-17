@@ -1,9 +1,11 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
+using LiBookerWebApi.Models;
 using LiBookerWebApi.Models.Entities;
 
 namespace LiBookerWebApi.Model
 {
-    public class LiBookerDbContext : DbContext
+    public class LiBookerDbContext : IdentityDbContext<ApplicationUser>
     {
         public LiBookerDbContext(DbContextOptions<LiBookerDbContext> options) : base(options)
         {
@@ -28,6 +30,8 @@ namespace LiBookerWebApi.Model
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            base.OnModelCreating(modelBuilder);
+
             // table 'osoba'
             modelBuilder.Entity<Person>(b =>
             {
@@ -222,8 +226,6 @@ namespace LiBookerWebApi.Model
                 b.Property(x => x.PaidAt).HasColumnName("dat_zaplatenia".ToUpper());
                 b.Property(x => x.Amount).HasColumnName("cena".ToUpper()).HasColumnType("NUMBER");
             });
-
-            base.OnModelCreating(modelBuilder);
         }
     }
 }

@@ -1,6 +1,9 @@
 using LiBookerWebApi.Endpoints;
 using LiBookerWebApi.Infrastructure;
+using LiBookerWebApi.Model;
+using LiBookerWebApi.Models;
 using LiBookerWebApi.Services;
+using Microsoft.AspNetCore.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,6 +20,11 @@ if (builder.Environment.IsDevelopment())
 // existing method that configures Oracle/DbContext
 builder.Services.AddOracleDb(builder.Configuration, out var connectionString);
 
+// Configure ASP.NET Core Identity
+builder.Services.AddIdentityApiEndpoints<ApplicationUser>()
+    .AddRoles<IdentityRole>()
+    .AddEntityFrameworkStores<LiBookerDbContext>();
+
 // register scoped services
 builder.Services.AddScoped<IPersonService, PersonService>();
 builder.Services.AddScoped<IPublicationService, PublicationService>();
@@ -29,6 +37,10 @@ LaunchConnectionPoolWarmup(app.Services, connectionString, app.Environment.IsDev
 
 app.UseHttpsRedirection();
 app.UseAuthorization();
+
+// Map Identity endpoints for authentication
+var authGroup = app.MapGroup("/api/auth");
+authGroup.MapIdentityApi<ApplicationUser>();
 
 bool logDuration = IsDurationLoggingEnabled(app);
 app.MapPersonEndpoints();
