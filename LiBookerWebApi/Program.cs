@@ -36,6 +36,14 @@ var app = builder.Build();
 LaunchConnectionPoolWarmup(app.Services, connectionString, app.Environment.IsDevelopment());
 
 app.UseHttpsRedirection();
+
+// CORS must be called before authentication and authorization
+if (app.Environment.IsDevelopment() && corsPolicy != string.Empty)
+{
+    app.UseCors(corsPolicy);
+}
+
+app.UseAuthentication();
 app.UseAuthorization();
 
 // Map Identity endpoints for authentication
@@ -51,8 +59,6 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
-    if (corsPolicy != string.Empty)
-        app.UseCors(corsPolicy);
 }
 
 app.Run();
