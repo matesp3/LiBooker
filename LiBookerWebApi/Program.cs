@@ -1,6 +1,9 @@
 using LiBookerWebApi.Endpoints;
 using LiBookerWebApi.Infrastructure;
+using LiBookerWebApi.Model;
+using LiBookerWebApi.Models;
 using LiBookerWebApi.Services;
+using Microsoft.AspNetCore.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,6 +20,11 @@ if (builder.Environment.IsDevelopment())
 // existing method that configures Oracle/DbContext
 builder.Services.AddOracleDb(builder.Configuration, out var connectionString);
 
+// Configure ASP.NET Core Identity
+builder.Services.AddIdentityApiEndpoints<ApplicationUser>()
+    .AddRoles<IdentityRole>()
+    .AddEntityFrameworkStores<LiBookerDbContext>();
+
 // register scoped services
 builder.Services.AddScoped<IPersonService, PersonService>();
 builder.Services.AddScoped<IPublicationService, PublicationService>();
@@ -28,7 +36,19 @@ var app = builder.Build();
 LaunchConnectionPoolWarmup(app.Services, connectionString, app.Environment.IsDevelopment());
 
 app.UseHttpsRedirection();
+
+// CORS must be called before authentication and authorization
+if (app.Environment.IsDevelopment() && corsPolicy != string.Empty)
+{
+    app.UseCors(corsPolicy);
+}
+
+app.UseAuthentication();
 app.UseAuthorization();
+
+// Map Identity endpoints for authentication
+var authGroup = app.MapGroup("/api/auth");
+authGroup.MapIdentityApi<ApplicationUser>();
 
 bool logDuration = IsDurationLoggingEnabled(app);
 app.MapPersonEndpoints();
@@ -39,8 +59,6 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
-    if (corsPolicy != string.Empty)
-        app.UseCors(corsPolicy);
 }
 
 app.Run();
