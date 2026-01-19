@@ -5,6 +5,11 @@ namespace LiBookerWebApi.Endpoints
 {
     public static class MatchSearchEndpoint
     {
+        /// <summary>
+        /// Maps the Match Search endpoint.
+        /// </summary>
+        /// <param name="app"></param>
+        /// <param name="durLoggingEnabled"></param>
         public static void MapMatchSearchEndpoint(this WebApplication app, bool durLoggingEnabled)
         {
             app.MapGet("/api/matchsearch", async (Services.IMatchSearchService svc, 

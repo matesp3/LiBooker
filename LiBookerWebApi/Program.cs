@@ -3,6 +3,7 @@ using LiBookerWebApi.Infrastructure;
 using LiBookerWebApi.Model;
 using LiBookerWebApi.Models;
 using LiBookerWebApi.Services;
+using LiBooker.Shared.Roles;
 using Microsoft.AspNetCore.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -29,13 +30,15 @@ builder.Services.AddIdentityApiEndpoints<ApplicationUser>()
 builder.Services.AddScoped<IPersonService, PersonService>();
 builder.Services.AddScoped<IPublicationService, PublicationService>();
 builder.Services.AddScoped<IMatchSearchService, MatchSearchService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+
 
 var app = builder.Build();
 
 // Warm up Oracle connection pool during startup (non-blocking)
 LaunchConnectionPoolWarmup(app.Services, connectionString, app.Environment.IsDevelopment());
 
-app.UseHttpsRedirection();
+app.UseHttpsRedirection(); // use encryption only way
 
 // CORS must be called before authentication and authorization
 if (app.Environment.IsDevelopment() && corsPolicy != string.Empty)
@@ -46,14 +49,11 @@ if (app.Environment.IsDevelopment() && corsPolicy != string.Empty)
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Map Identity endpoints for authentication
-var authGroup = app.MapGroup("/api/auth");
-authGroup.MapIdentityApi<ApplicationUser>();
-
 bool logDuration = IsDurationLoggingEnabled(app);
 app.MapPersonEndpoints();
 app.MapPublicationEndpoints(logDuration);
 app.MapMatchSearchEndpoint(logDuration);
+app.MapRegistrationEndpoints();
 
 if (app.Environment.IsDevelopment())
 {
@@ -61,7 +61,49 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+using (var scope = app.Services.CreateScope())
+{
+    await EnsureUserRolesExist(scope);
+    await EnsureAdminUserExists(scope);
+}
+
 app.Run();
+
+// ###########___ START OF AN APP ___##############
+
+/// Ensures that all required user roles exist in the database.
+async static Task EnsureUserRolesExist(IServiceScope scope)
+{
+    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+    string[] roles = UserRolesExtensions.GetAllRoleNames().ToArray();
+    foreach (var roleName in roles)
+    {
+        if (!await roleManager.RoleExistsAsync(roleName))
+        {
+            var role = new IdentityRole(roleName);
+            await roleManager.CreateAsync(role);
+        }
+    }
+}
+
+async static Task EnsureAdminUserExists(IServiceScope scope)
+{
+    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+    string adminEmail = "admin@libooker.com";
+    var adminUser = await userManager.FindByEmailAsync(adminEmail);
+    if (adminUser == null)
+    {
+        // todo appuser and person creation
+    }
+    else // ensuring that existing admin user has admin privileges
+    {
+        var adminRoleName = UserRolesExtensions.GetRoleName(UserRoles.Admin);
+        if (!await userManager.IsInRoleAsync(adminUser, adminRoleName))
+        {
+            await userManager.AddToRoleAsync(adminUser, adminRoleName);
+        }
+    }
+}
 
 
 static string ConfigureDevCors(WebApplicationBuilder builder)

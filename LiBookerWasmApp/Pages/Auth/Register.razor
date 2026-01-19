@@ -1,0 +1,101 @@
+@page "/register"
+@using LiBookerWasmApp.Services.Auth
+@inject CustomAuthStateProvider AuthProvider
+@inject NavigationManager Navigation
+
+<PageTitle>LiBooker - Registration</PageTitle>
+
+<div class="auth-container">
+    <h3>Registration of a new user</h3>
+
+    @if (!string.IsNullOrEmpty(this.ErrorMessage))
+    {
+        <div class="alert alert-danger">@this.ErrorMessage</div>
+    }
+
+    <EditForm Model="@this.RegisterModel" OnValidSubmit="HandleRegistration">
+        <DataAnnotationsValidator />
+        
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label>Name</label>
+                <InputText @bind-Value="this.RegisterModel.FirstName" class="form-control" />
+                <ValidationMessage For="@(() => this.RegisterModel.FirstName)" />
+            </div>
+            <div class="col-md-6 mb-3">
+                <label>Surname</label>
+                <InputText @bind-Value="this.RegisterModel.LastName" class="form-control" />
+                <ValidationMessage For="@(() => this.RegisterModel.LastName)" />
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label>Email (will be used as login name)</label>
+            <InputText @bind-Value="this.RegisterModel.Email" class="form-control" />
+            <ValidationMessage For="@(() => this.RegisterModel.Email)" />
+        </div>
+        
+        <div class="mb-3">
+             <label>Mobile number</label>
+             <InputText @bind-Value="this.RegisterModel.Phone" class="form-control" />
+        </div>
+
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                 <label>Birthday date</label>
+                 <InputDate @bind-Value="this.RegisterModel.BirthDate" class="form-control" />
+            </div>
+            <div class="col-md-6 mb-3">
+                <label>Gender</label>
+                <InputSelect @bind-Value="this.RegisterModel.Gender" class="form-select">
+                    <option value="M">Male</option>
+                    <option value="F">Female</option>
+                    <option value="N">None</option>
+                </InputSelect>
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label>Password</label>
+            <InputText @bind-Value="this.RegisterModel.Password" type="password" class="form-control" />
+            <ValidationMessage For="@(() => this.RegisterModel.Password)" />
+        </div>
+        
+        <button type="submit" class="btn btn-success w-100" disabled="@this.IsProcessing">
+             @if (this.IsProcessing)
+            {
+                <span class="spinner-border spinner-border-sm">Registering...</span>
+            }
+            else
+            {
+                <span>Create an account</span>
+            }
+        </button>
+    </EditForm>
+</div>
+
+@code {
+    private PersonRegistration RegisterModel = new() { BirthDate = DateTime.Now.AddYears(-18), Gender = 'M' };
+    private string? ErrorMessage;
+    private bool IsProcessing = false;
+
+    private async Task HandleRegistration()
+    {
+        this.IsProcessing = true;
+        this.ErrorMessage = null;
+
+        var success = await this.AuthProvider.RegisterAsync(RegisterModel);
+        if (success)
+        {
+            // after successful registration redirecting to login
+            // (optionally, we can login directly in case when api sends token directly within registration response)
+            this.Navigation.NavigateTo("/login");
+        }
+        else
+        {
+            this.ErrorMessage = "Registration failed. Check input data or whether e-mail is not already taken.";
+            // Optionally, for better UX, display response from API
+        }
+        this.IsProcessing = false;
+    }
+}

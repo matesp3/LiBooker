@@ -1,0 +1,80 @@
+@page "/login"
+@using LiBookerWasmApp.Services.Auth
+@inject CustomAuthStateProvider AuthProvider
+@inject NavigationManager Navigation
+
+<PageTitle>LiBooker - Login</PageTitle>
+
+<div class="auth-container">
+    <h3>Login</h3>
+
+    @if (!string.IsNullOrEmpty(this.ErrorMessage))
+    {
+        <div class="alert alert-danger">@this.ErrorMessage</div>
+    }
+
+    <EditForm Model="@this.LoginModel" OnValidSubmit="HandleLogin">
+        <DataAnnotationsValidator />
+        
+        <div class="form-group mb-3">
+            <label>Email</label>
+            <InputText @bind-Value="this.LoginModel.Email" class="form-control" placeholder="name@example.com" />
+            <ValidationMessage For="@(() => this.LoginModel.Email)" />
+        </div>
+
+        <div class="form-group mb-3">
+            <label>Password</label>
+            <InputText @bind-Value="this.LoginModel.Password" type="password" class="form-control" placeholder="Password" />
+            <ValidationMessage For="@(() => this.LoginModel.Password)" />
+        </div>
+
+        <button type="submit" class="btn btn-primary w-100" disabled="@this.IsProcessing">
+            @if (this.IsProcessing)
+            {
+                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                <span> Logging in...</span>
+            }
+            else
+            {
+                <span>Sign in</span>
+            }
+        </button>
+    </EditForm>
+    
+    <div class="mt-3 text-center">
+        <small>No existing account? <a href="register">Register here</a>.</small>
+    </div>
+</div>
+
+@code {
+    private LiBooker.Shared.DTOs.Login LoginModel = new();
+    private string? ErrorMessage;
+    private bool IsProcessing = false;
+
+    private async Task HandleLogin()
+    {
+        this.IsProcessing = true;
+        this.ErrorMessage = null;
+
+        try
+        {
+            var success = await this.AuthProvider.LoginAsync(this.LoginModel);
+            if (success)
+            {
+                this.Navigation.NavigateTo("/");
+            }
+            else
+            {
+                this.ErrorMessage = "Invalid name or password.";
+            }
+        }
+        catch (Exception ex)
+        {
+            this.ErrorMessage = $"Connection error: {ex.Message}";
+        }
+        finally
+        {
+            this.IsProcessing = false;
+        }
+    }
+}
