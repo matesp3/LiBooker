@@ -55,11 +55,10 @@ namespace LiBookerWebApi.Services
             }
         }
 
-        public async Task RefreshUserAsync(CancellationToken ct = default)
+        public Task<RegistrationResult> CreateAdminAsync(UserManager<ApplicationUser> userManager, PersonRegistration dto, CancellationToken ct)
         {
-            // Týmto donútime Blazor, aby znova zavolal GetAuthenticationStateAsync,
-            // ktorý znova zavolá /api/auth/user-info a stiahne aktuálne roly.
-            NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
+
+            throw new NotImplementedException();
         }
 
         private async Task<bool> IsEmailTakenAsync(UserManager<ApplicationUser> userManager, string loweredEmail, CancellationToken ct = default)

@@ -10,9 +10,12 @@ namespace LiBookerWebApi.Services
         Task<RegistrationResult> RegisterUserAsync(UserManager<ApplicationUser> userManager, PersonRegistration dto, CancellationToken ct);
 
         /// <summary>
-        /// For ensuring immediate action of changing user's role
+        /// Creates an admin user without admin privileges.
         /// </summary>
+        /// <param name="userManager"></param>
+        /// <param name="dto"></param>
+        /// <param name="ct"></param>
         /// <returns></returns>
-        Task RefreshUserAsync(CancellationToken ct);
+        Task<RegistrationResult> CreateAdminAsync(UserManager<ApplicationUser> userManager, PersonRegistration dto, CancellationToken ct);
     }
 }

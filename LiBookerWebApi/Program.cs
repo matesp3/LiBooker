@@ -1,9 +1,10 @@
+using LiBooker.Shared.DTOs;
+using LiBooker.Shared.Roles;
 using LiBookerWebApi.Endpoints;
 using LiBookerWebApi.Infrastructure;
 using LiBookerWebApi.Model;
 using LiBookerWebApi.Models;
 using LiBookerWebApi.Services;
-using LiBooker.Shared.Roles;
 using Microsoft.AspNetCore.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -63,8 +64,17 @@ if (app.Environment.IsDevelopment())
 
 using (var scope = app.Services.CreateScope())
 {
-    await EnsureUserRolesExist(scope);
-    await EnsureAdminUserExists(scope);
+    try
+    {
+        await EnsureUserRolesExist(scope);
+        await EnsureAdminUserExists(scope);
+    }
+    catch (Exception ex)
+    {
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "An error occurred while seeding roles or admin user.");
+        throw; // rethrow to prevent app from starting in invalid state
+    }
 }
 
 app.Run();
@@ -89,11 +99,27 @@ async static Task EnsureUserRolesExist(IServiceScope scope)
 async static Task EnsureAdminUserExists(IServiceScope scope)
 {
     var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
-    string adminEmail = "admin@libooker.com";
+    //string adminEmail = "admin@libooker.com";
+    string adminEmail = Environment.GetEnvironmentVariable("LIBOOKER_USER_ADMIN_EMAIL")
+                ?? throw new InvalidOperationException("Environment variable 'LIBOOKER_USER_ADMIN_EMAIL' is not set.");
     var adminUser = await userManager.FindByEmailAsync(adminEmail);
     if (adminUser == null)
     {
-        // todo appuser and person creation
+        var adminPerson = new PersonRegistration
+        {
+            FirstName = "Admin",
+            LastName = String.Empty,
+            BirthDate = DateTime.Now,
+            Email = adminEmail,
+            Gender = 'M',
+            Password = Environment.GetEnvironmentVariable("LIBOOKER_USER_ADMIN_PASSWORD")
+                ?? throw new InvalidOperationException("Environment variable 'LIBOOKER_USER_ADMIN_PASSWORD' is not set."),
+        };
+        var authService = scope.ServiceProvider.GetRequiredService<IAuthService>();
+        
+        var res = await authService.CreateAdminAsync(userManager, adminPerson, default);
+        if (!res.IsSuccessful)
+            throw new InvalidProgramException($"Admin user creation failed at {DateTime.Now}");
     }
     else // ensuring that existing admin user has admin privileges
     {
@@ -104,7 +130,6 @@ async static Task EnsureAdminUserExists(IServiceScope scope)
         }
     }
 }
-
 
 static string ConfigureDevCors(WebApplicationBuilder builder)
 {
