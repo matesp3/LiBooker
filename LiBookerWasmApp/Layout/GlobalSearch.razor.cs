@@ -1,6 +1,8 @@
 using LiBooker.Shared.DTOs;
 using LiBookerWasmApp.Services.Clients;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Web;
+using Microsoft.JSInterop;
 
 namespace LiBookerWasmApp.Layout
 {
@@ -12,12 +14,16 @@ namespace LiBookerWasmApp.Layout
         [Inject]
         public required NavigationManager NavigationManager { get; set; }
 
+        [Inject] // for JS interop
+        public required IJSRuntime JSRuntime { get; set; }
+
         private bool isSearching = false;
         private bool showSearchResults = false;
         private string searchTerm = "";
         private System.Timers.Timer? debounceTimer;
         private List<FoundMatch> searchResults = [];
         private CancellationTokenSource? searchCts = null;
+        private int selectedIndex = -1;
 
         public string SearchTerm
         {
@@ -88,6 +94,8 @@ namespace LiBookerWasmApp.Layout
                     StateHasChanged();
                 }
             }
+
+            this.selectedIndex = -1; // Reset selection
         }
 
         private void SelectSearchResultItem(FoundMatch match)
@@ -106,13 +114,69 @@ namespace LiBookerWasmApp.Layout
                 // Navigate to publications filtered by author (logic to be implemented on Publications page)
                  Console.WriteLine($"Filter by author: {author.FullName}");
                  // For now, we can just navigate to publications, you might want to add query strings later
-                 NavigationManager.NavigateTo("publications"); 
+                 this.NavigationManager.NavigateTo("publications"); 
             }
             else if (match is GenreMatch genre)
             {
                  Console.WriteLine($"Filter by genre: {genre.Name}");
-                 NavigationManager.NavigateTo("publications");
+                 this.NavigationManager.NavigateTo("publications");
             }
+        }
+
+        // Helper for highlighting text
+        private MarkupString HighlightText(string text)
+        {
+            if (string.IsNullOrEmpty(SearchTerm) || string.IsNullOrEmpty(text))
+                return new MarkupString(text);
+
+            var pattern = System.Text.RegularExpressions.Regex.Escape(this.SearchTerm);
+            var result = System.Text.RegularExpressions.Regex.Replace(text, $"({pattern})", "<strong>$1</strong>", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+            return new MarkupString(result);
+        }
+
+        // Initialize shortcut on first render
+        protected override async Task OnAfterRenderAsync(bool firstRender)
+        {
+            if (firstRender)
+            {
+                // Calls the JS function to attach the keydown event listener
+                await this.JSRuntime.InvokeVoidAsync("liBookerSearch.initializeGlobalSearchShortcut", "globalSearchInput");
+            }
+        }
+
+        // HandleKeyDown to trigger scrolling
+        private async Task HandleKeyDown(KeyboardEventArgs e)
+        {
+            var allResults = this.searchResults.Cast<FoundMatch>().ToList();
+
+            if (allResults.Count == 0) return;
+
+            if (e.Key == "ArrowDown")
+            {
+                this.selectedIndex = Math.Min(this.selectedIndex + 1, allResults.Count - 1);
+                await ScrollToActive(); // Call JS to scroll to the active item
+            }
+            else if (e.Key == "ArrowUp")
+            {
+                this.selectedIndex = Math.Max(this.selectedIndex - 1, 0);
+                await ScrollToActive(); // Call JS to scroll to the active item
+            }
+            else if (e.Key == "Enter" && this.selectedIndex >= 0)
+            {
+                SelectSearchResultItem(allResults[this.selectedIndex]);
+            }
+        }
+
+        // Helper to invoke JS scrolling
+        private async Task ScrollToActive()
+        {
+            // We need to wait for the UI to update the "active" class first
+            // StateHasChanged isn't always instant in terms of DOM repaint for JS to see
+            StateHasChanged(); 
+            // Small delay to ensure DOM has the .active class applied before JS runs
+            await Task.Yield(); 
+            await this.JSRuntime.InvokeVoidAsync("liBookerSearch.scrollToActiveItem", "searchResultsDropdown");
         }
 
         private async Task OnSearchBlur()

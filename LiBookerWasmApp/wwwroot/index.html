@@ -26,6 +26,34 @@
         <a href="." class="reload">Reload</a>
         <span class="dismiss">🗙</span>
     </div>
+    <script>
+        window.liBookerSearch = {
+            // Keeps the active item visible in the scrollable list
+            scrollToActiveItem: function (containerId) {
+                const container = document.getElementById(containerId);
+                if (!container) return;
+
+                const activeItem = container.querySelector('.search-item.active');
+                if (activeItem) {
+                    activeItem.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+                }
+            },
+            // Handles Ctrl+K globally
+            initializeGlobalSearchShortcut: function (inputId) {
+                document.addEventListener('keydown', function (e) {
+                    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                        e.preventDefault(); // STOPS the browser from focusing address bar
+                        const input = document.getElementById(inputId);
+                        if (input) {
+                            input.focus();
+                        }
+                    }
+                });
+            }
+        };
+    </script>
+
+
     <script src="_framework/blazor.webassembly.js"></script>
 </body>
 

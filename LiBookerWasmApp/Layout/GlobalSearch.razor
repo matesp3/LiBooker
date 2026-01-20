@@ -10,14 +10,16 @@
             </span>
 
             <input type="text"
+                   id="globalSearchInput" 
                    class="form-control"
-                   placeholder="Search..."
+                   placeholder="Search... (Ctrl+K)"
                    @bind="SearchTerm"
                    @bind:event="oninput"
                    @onfocus="() => this.showSearchResults = true"
                    @onblur="OnSearchBlur"
                    aria-expanded="@(this.showSearchResults ? "true" : "false")"
-                   autocomplete="off" />
+                   autocomplete="off"
+                   @onkeydown="HandleKeyDown" />
             
             @if (!string.IsNullOrEmpty(this.SearchTerm))
             {
@@ -29,27 +31,32 @@
             }
         </div>
 
-        <ul class="dropdown-menu w-100 shadow mt-2 @(this.showSearchResults && !string.IsNullOrEmpty(this.SearchTerm) ? "show" : "")"
+        <ul id="searchResultsDropdown"
+            class="dropdown-menu w-100 shadow mt-2 @(this.showSearchResults && !string.IsNullOrEmpty(this.SearchTerm) ? "show" : "")"
             style="max-height: 300px; overflow-y: auto; border-radius: 12px;">
+            
             @if (this.isSearching)
             {
                 <li><span class="dropdown-item-text text-muted text-center py-3">Searching...</span></li>
             }
             else if (this.searchResults.Any())
             {
-                // 1. books section
                 var books = this.searchResults.OfType<BookMatch>().ToList();
+                int globalIndex = 0; // Global counter
+
+                // 1. Books
                 if (books.Any())
                 {
                     <li><h6 class="dropdown-header font-weight-bold text-uppercase mt-2 px-3">Books</h6></li>
                     @foreach (var book in books)
                     {
+                        var currentIndex = globalIndex++;
                         <li>
-                            <button class="dropdown-item search-item d-flex flex-column justify-content-center py-2 px-3"
+                            <button class="dropdown-item search-item @(currentIndex == this.selectedIndex ? "active" : "")"
                                     type="button"
                                     @onmousedown="() => SelectSearchResultItem(book)">
                                 <div class="d-flex w-100 justify-content-between align-items-center">
-                                    <h6 class="mb-0 text-truncate" style="max-width: 80%;">@book.Title</h6>
+                                    <h6 class="mb-0 text-truncate" style="max-width: 80%;">@HighlightText(book.Title)</h6>
                                 </div>
                                 <small class="text-muted d-block text-truncate w-100 mt-1">
                                     @(string.IsNullOrWhiteSpace(book.Authors) ? "\u00A0" : book.Authors)
@@ -57,25 +64,26 @@
                             </button>
                         </li>
                     }
-                    @if(this.searchResults.OfType<AuthorMatch>().Any() || this.searchResults.OfType<GenreMatch>().Any()) 
+                    if(this.searchResults.OfType<AuthorMatch>().Any() || this.searchResults.OfType<GenreMatch>().Any()) 
                     { 
                         <li><hr class="dropdown-divider mx-2"></li> 
                     }
                 }
 
-                // 2. authors section
+                // 2. Authors
                 var authors = this.searchResults.OfType<AuthorMatch>().ToList();
                 if (authors.Any())
                 {
                     <li><h6 class="dropdown-header font-weight-bold text-uppercase mt-2 px-3">Authors</h6></li>
                     @foreach (var author in authors)
                     {
+                        var currentIndex = globalIndex++;
                         <li>
-                            <button class="dropdown-item search-item d-flex flex-column justify-content-center py-2 px-3"
+                            <button class="dropdown-item search-item @(currentIndex == this.selectedIndex ? "active" : "")"
                                     type="button"
                                     @onmousedown="() => SelectSearchResultItem(author)">
                                 <div class="d-flex w-100 justify-content-between align-items-center">
-                                    <h6 class="mb-0 text-truncate">@author.FullName</h6>
+                                    <h6 class="mb-0 text-truncate">@HighlightText(author.FullName)</h6>
                                 </div>
                                 <small class="text-muted d-block mt-1">&nbsp;</small>
                             </button>
@@ -87,19 +95,20 @@
                     }
                 }
 
-                // genres section
+                // 3. Genres
                 var genres = this.searchResults.OfType<GenreMatch>().ToList();
                 if (genres.Any())
                 {
                     <li><h6 class="dropdown-header font-weight-bold text-uppercase mt-2 px-3">Genres</h6></li>
                     @foreach (var genre in genres)
                     {
+                        var currentIndex = globalIndex++;
                         <li>
-                            <button class="dropdown-item search-item d-flex flex-column justify-content-center py-2 px-3"
+                            <button class="dropdown-item search-item @(currentIndex == this.selectedIndex ? "active" : "")"
                                     type="button"
                                     @onmousedown="() => SelectSearchResultItem(genre)">
                                 <div class="d-flex w-100 justify-content-between align-items-center">
-                                    <h6 class="mb-0 text-truncate">@genre.Name</h6>
+                                    <h6 class="mb-0 text-truncate">@HighlightText(genre.Name)</h6>
                                 </div>
                                 <small class="text-muted d-block mt-1">&nbsp;</small>
                             </button>
@@ -111,6 +120,7 @@
             {
                 <li><span class="dropdown-item-text text-muted text-center py-3">No results found.</span></li>
             }
+
         </ul>
     </div>
 </div>
