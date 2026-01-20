@@ -35,7 +35,16 @@
 
                 const activeItem = container.querySelector('.search-item.active');
                 if (activeItem) {
-                    activeItem.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+                    // Check if this active item is the VERY FIRST interactive item
+                    // Using querySelectorAll helps us find index among items
+                    const allItems = container.querySelectorAll('.search-item');
+                    if (allItems.length > 0 && allItems[0] === activeItem) {
+                        // If it's the first item, scroll to the absolute top to show headers/padding
+                        container.scrollTop = 0;
+                    } else {
+                        // Otherwise, use standard scroll behavior
+                        activeItem.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+                    }
                 }
             },
             // Handles Ctrl+K globally
@@ -49,6 +58,13 @@
                         }
                     }
                 });
+            },
+            // function for blur (loss of focus)
+            blurElement: function (elementId) {
+                const element = document.getElementById(elementId);
+                if (element) {
+                    element.blur();
+                }
             }
         };
     </script>

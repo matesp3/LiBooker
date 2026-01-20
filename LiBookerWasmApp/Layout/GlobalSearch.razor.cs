@@ -148,6 +148,15 @@ namespace LiBookerWasmApp.Layout
         // HandleKeyDown to trigger scrolling
         private async Task HandleKeyDown(KeyboardEventArgs e)
         {
+            // 1. Handle Escape key FIRST
+            if (e.Key == "Escape")
+            {
+                this.showSearchResults = false;
+                // Call JS to remove focus from the input
+                await this.JSRuntime.InvokeVoidAsync("liBookerSearch.blurElement", "globalSearchInput");
+                return;
+            }
+
             var allResults = this.searchResults.Cast<FoundMatch>().ToList();
 
             if (allResults.Count == 0) return;

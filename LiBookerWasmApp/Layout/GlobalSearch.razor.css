@@ -131,7 +131,15 @@
     letter-spacing: 0.05em;
     color: #adb5bd;
     padding-bottom: 0.25rem;
+    display: flex;
+    align-items: center;
 }
+
+.dropdown-header i {
+    font-size: 1.25rem;
+    margin-right: 0.5rem;
+}
+
 .dropdown-divider { margin: 0; }
 
 

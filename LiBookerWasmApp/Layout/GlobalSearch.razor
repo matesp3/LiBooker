@@ -47,7 +47,15 @@
                 // 1. Books
                 if (books.Any())
                 {
-                    <li><h6 class="dropdown-header font-weight-bold text-uppercase mt-2 px-3">Books</h6></li>
+                    <li>
+                        <h6 class="dropdown-header font-weight-bold text-uppercase mt-2 px-3 d-flex align-items-center">
+                            <!-- SVG for Book -->
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" class="bi bi-book-half me-2" viewBox="0 0 16 16">
+                                <path d="M8.5 2.687c.654-.689 1.782-.886 3.112-.752 1.234.124 2.503.523 3.388.893v9.923c-.918-.35-2.107-.692-3.287-.81-1.094-.111-2.278-.039-3.213.492V2.687zM8 1.783C7.015.936 5.587.81 4.287.94c-1.514.153-3.042.672-3.994 1.105A.5.5 0 0 0 0 2.5v11a.5.5 0 0 0 .707.455c.882-.4 2.303-.881 3.68-1.02 1.409-.142 2.59.087 3.223.877a.5.5 0 0 0 .78 0c.633-.79 1.814-1.019 3.222-.877 1.378.139 2.8.62 3.681 1.02A.5.5 0 0 0 16 13.5v-11a.5.5 0 0 0-.293-.455c-.952-.433-2.48-.952-3.994-1.105C10.413.809 8.985.936 8 1.783z"/>
+                            </svg>
+                            BOOKS
+                        </h6>
+                    </li>
                     @foreach (var book in books)
                     {
                         var currentIndex = globalIndex++;
@@ -74,7 +82,16 @@
                 var authors = this.searchResults.OfType<AuthorMatch>().ToList();
                 if (authors.Any())
                 {
-                    <li><h6 class="dropdown-header font-weight-bold text-uppercase mt-2 px-3">Authors</h6></li>
+                    <li>
+                        <h6 class="dropdown-header font-weight-bold text-uppercase mt-2 px-3 d-flex align-items-center">
+                            <!-- SVG for Author/Person -->
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" class="bi bi-person-circle me-2" viewBox="0 0 16 16">
+                                <path d="M11 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"/>
+                                <path fill-rule="evenodd" d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8zm8-7a7 7 0 0 0-5.468 11.37C3.242 11.226 4.805 10 8 10s4.757 1.225 5.468 2.37A7 7 0 0 0 8 1z"/>
+                            </svg>
+                            AUTHORS
+                        </h6>
+                    </li>
                     @foreach (var author in authors)
                     {
                         var currentIndex = globalIndex++;
@@ -99,7 +116,16 @@
                 var genres = this.searchResults.OfType<GenreMatch>().ToList();
                 if (genres.Any())
                 {
-                    <li><h6 class="dropdown-header font-weight-bold text-uppercase mt-2 px-3">Genres</h6></li>
+                    <li>
+                         <h6 class="dropdown-header font-weight-bold text-uppercase mt-2 px-3 d-flex align-items-center">
+                            <!-- SVG for Genre/Tags -->
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" class="bi bi-tags-fill me-2" viewBox="0 0 16 16">
+                              <path d="M2 2a1 1 0 0 1 1-1h4.586a1 1 0 0 1 .707.293l7 7a1 1 0 0 1 0 1.414l-4.586 4.586a1 1 0 0 1-1.414 0l-7-7A1 1 0 0 1 2 6.586V2zm3.5 4a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z"/>
+                              <path d="M1.293 7.793A1 1 0 0 1 1 7.086V2a1 1 0 0 0-1 1v4.586a1 1 0 0 0 .293.707l7 7a1 1 0 0 0 1.414 0l.043-.043-7.457-7.457z"/>
+                            </svg>
+                            GENRES
+                        </h6>
+                    </li>
                     @foreach (var genre in genres)
                     {
                         var currentIndex = globalIndex++;
@@ -118,7 +144,18 @@
             }
             else
             {
-                <li><span class="dropdown-item-text text-muted text-center py-3">No results found.</span></li>
+                <li>
+                    <div class="text-center py-4">
+                        <!-- grey search icon-->
+                        <div class="text-muted mb-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="bi bi-search" viewBox="0 0 16 16" style="opacity: 0.5">
+                               <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/>
+                            </svg>
+                        </div>
+                        <p class="text-muted small mb-0">We couldn't find "<strong>@this.SearchTerm</strong>"</p>
+                        <small class="text-muted" style="font-size: 0.7rem">Try searching for author or title.</small>
+                    </div>
+                </li>
             }
 
         </ul>
