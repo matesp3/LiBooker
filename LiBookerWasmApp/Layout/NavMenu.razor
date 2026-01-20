@@ -1,6 +1,8 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
+﻿@using LiBooker.Shared.Roles;
+
+<div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
-        <a class="navbar-brand" href="">Library</a>
+        <a class="navbar-brand" href="/">LiBooker</a>
         <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
             <span class="navbar-toggler-icon"></span>
         </button>
@@ -10,20 +12,17 @@
 <div class="@NavMenuCssClass nav-scrollable" @onclick="ToggleNavMenu">
     <nav class="nav flex-column">
         <div class="nav-item px-3">
-            <NavLink class="nav-link" href="/" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
+            <NavLink class="nav-link" href="/">
+                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Publications
             </NavLink>
         </div>
+        <AuthorizeView Roles="@(UserRolesExtensions.GetRoleName(UserRoles.Admin))">
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="people">
                 <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> People
             </NavLink>
         </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="publications">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Publications
-            </NavLink>
-        </div>
+        </AuthorizeView>
         <AuthorizeView>
             <div class="nav-item px-3">
                 <NavLink class="nav-link" href="person/details">

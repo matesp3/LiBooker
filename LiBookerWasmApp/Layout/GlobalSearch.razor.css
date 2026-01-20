@@ -8,11 +8,11 @@
 }
 
 .explore-label {
-    font-weight: 600;
+    font-weight: 700;
     text-transform: uppercase;
     font-size: 0.75rem;
     letter-spacing: 1.5px;
-    color: #6c757d;
+    color: #0a2540; 
     margin-right: 15px;
     user-select: none;
     white-space: nowrap; 

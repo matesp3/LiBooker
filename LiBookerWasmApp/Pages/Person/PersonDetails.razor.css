@@ -1,0 +1,177 @@
+﻿/* Main container styling */
+.profile-container {
+    display: flex;
+    justify-content: center;
+    padding: 2rem 1rem;
+    width: 100%;
+}
+
+/* Card styling to match modern app theme */
+.profile-card {
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08); /* Soft shadow */
+    width: 100%;
+    max-width: 600px;
+    overflow: hidden;
+    border: 1px solid #e9ecef;
+}
+
+/* Header section with brand color - UPDATED BORDER */
+.profile-header {
+    /* Lighter blue to slightly brighter blue */
+    background: linear-gradient(135deg, #1e4b7a 0%, #3b7dc4 100%);
+    color: white;
+    padding: 2.5rem 2rem;
+    text-align: center;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    border-bottom: 2px solid #a0c4ff;
+}
+
+/* Avatar circle matching the style of "modern pills" */
+.avatar-circle {
+    width: 100px;
+    height: 100px;
+    background-color: #a0c4ff;
+    color: #0a2540;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5rem;
+    font-weight: 700;
+    border: 4px solid #ffffff;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.profile-name {
+    margin: 0;
+    font-size: 1.75rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    color: #ffffff;
+}
+
+.profile-badge {
+    background-color: rgba(255, 255, 255, 0.2);
+    padding: 0.25rem 0.75rem;
+    border-radius: 50px;
+    font-size: 0.85rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #ffffff;
+}
+
+/* Body content area */
+.profile-body {
+    padding: 2rem;
+}
+
+.section-title {
+    color: #0a2540;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    font-weight: 700;
+    margin-bottom: 1.25rem;
+    border-left: 4px solid #a0c4ff;
+    padding-left: 10px;
+}
+
+/* Grid for information items */
+.info-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+}
+
+@media (min-width: 500px) {
+    .info-grid {
+        grid-template-columns: 1fr 1fr; /* Two columns on larger screens */
+    }
+}
+
+.info-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.info-label {
+    font-size: 0.85rem;
+    color: #6c757d;
+    margin-bottom: 0.25rem;
+    font-weight: 500;
+}
+
+.info-value {
+    font-size: 1rem;
+    color: #212529;
+    font-weight: 600;
+    word-break: break-all; /* Prevents long emails from breaking layout */
+}
+
+/* Decorative separator */
+.separator {
+    height: 1px;
+    background-color: #f0f0f0;
+    margin: 1.5rem 0;
+}
+
+/* Loading state styling */
+.loading-state {
+    text-align: center;
+    color: #adb5bd;
+    margin-top: 3rem;
+}
+
+/* Simple fade-in animation */
+.fade-in {
+    animation: fadeIn 0.4s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* --- Button to copy the ID --- */
+.btn-copy {
+    /* light background */
+    background-color: #f8f9fa;
+    /* thin border */
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    /* icon color - slightly gray */
+    color: #6c757d;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    margin-left: 10px;
+    cursor: pointer;
+    
+    /* animation */
+    transition: all 0.2s ease-in-out;
+}
+
+/* effect on mouse hover */
+.btn-copy:hover {
+    background-color: #e2e6ea;
+    color: #0a2540;
+    border-color: #adb5bd;
+    transform: translateY(-1px); /* slight uplift */
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+/* effect when clicking */
+.btn-copy:active {
+    transform: translateY(0);
+    box-shadow: none;
+    background-color: #dae0e5;
+}

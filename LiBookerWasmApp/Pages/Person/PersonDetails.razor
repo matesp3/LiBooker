@@ -1,21 +1,96 @@
 ﻿@page "/person/details"
 @inject PersonClient PersonClient
 @inject AuthenticationStateProvider AuthStateProvider 
+@inject IJSRuntime JSRuntime 
 @implements IDisposable
 
-<h3>PersonDetails</h3>
-@if (this.IsLoading)
-{
-    <p><em>Loading...</em></p>
-}
-else if (this.person == null)
-{
-    <p>Person details not found or user is not linked to a person record.</p>
-}
-else
-{
-    <p>Person: @(this.person.FirstName + " " + this.person.LastName) born @this.person.BirthDate</p>
-}
+<div class="profile-container fade-in">
+    @if (this.IsLoading)
+    {
+        <div class="loading-state">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p>Loading profile...</p>
+        </div>
+    }
+    else if (this.person == null)
+    {
+        <div class="alert alert-warning" role="alert">
+            <h4 class="alert-heading">Profile Not Found</h4>
+            <p>We could not retrieve user details or the user is not linked to a person record.</p>
+        </div>
+    }
+    else
+    {
+        <div class="profile-card">
+            <div class="profile-header">
+                <div class="avatar-circle">
+                    @GetInitials(person.FirstName, person.LastName)
+                </div>
+                <h2 class="profile-name">@person.FirstName @person.LastName</h2>
+                <span class="profile-badge">Member since @person.RegisteredAt.Year</span>
+            </div>
+
+            <div class="profile-body">
+                <div class="profile-section">
+                    <h5 class="section-title">Contact Information</h5>
+                    <div class="info-grid">
+                        
+                        <!-- Email Item with Copy Button -->
+                        <div class="info-item">
+                            <span class="info-label">Email</span>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="info-value">@person.Email</span>
+                                <button class="btn-copy" @onclick='() => CopyToClipboard(person.Email)' title="Copy email">
+                                    <!-- SVG Clipboard Icon -->
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                        <path d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1v-1z"/>
+                                        <path d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h3zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3z"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Phone Item with Copy Button -->
+                        <div class="info-item">
+                            <span class="info-label">Phone</span>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="info-value">@(string.IsNullOrEmpty(person.Phone) ? "Not provided" : person.Phone)</span>
+                                @if (!string.IsNullOrEmpty(person.Phone))
+                                {
+                                    <button class="btn-copy" @onclick='() => CopyToClipboard(person.Phone)' title="Copy phone">
+                                        <!-- SVG Clipboard Icon -->
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                            <path d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1v-1z"/>
+                                            <path d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h3zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3z"/>
+                                        </svg>
+                                    </button>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="separator"></div>
+
+                <div class="profile-section">
+                    <h5 class="section-title">Personal Details</h5>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <span class="info-label">Birth Date</span>
+                            <span class="info-value">@person.BirthDate.ToShortDateString()</span>
+                        </div>
+                         <div class="info-item">
+                            <span class="info-label">Gender</span>
+                            <span class="info-value">@GetGenderLabel(person.Gender)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
 
 @code {
     private bool IsLoading = true;
@@ -26,18 +101,15 @@ else
     {
         this.cts = new CancellationTokenSource();
         
-        // 1. Získame aktuálny stav prihlásenia
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;
 
         if (user.Identity?.IsAuthenticated == true)
         {
-            // 2. Vyčítame PersonId z claimov (ktoré sme tam vložili v kroku 3)
             var personIdClaim = user.FindFirst("PersonId");
 
             if (personIdClaim != null && int.TryParse(personIdClaim.Value, out int personId))
             {
-                // 3. Použijeme ID na volanie API
                 var response = await PersonClient.GetPersonByIdAsync(personId, this.cts.Token);
                 if (response.IsSuccess)
                 {
@@ -48,6 +120,27 @@ else
 
         this.IsLoading = false;
         StateHasChanged();
+    }
+
+    // Helper to extract initials for the avatar
+    private string GetInitials(string first, string last)
+    {
+        char f = first.FirstOrDefault();
+        char l = last.FirstOrDefault();
+        return $"{f}{l}".ToUpper();
+    }
+
+    // Helper to format gender char to string (optional)
+    private string GetGenderLabel(char gender) => gender switch
+    {
+        'M' => "Male",
+        'F' => "Female",
+        _ => gender.ToString()
+    };
+
+    private async Task CopyToClipboard(string text)
+    {
+        await this.JSRuntime.InvokeVoidAsync("clipboardCopy.copyText", text);
     }
 
     public void Dispose()
