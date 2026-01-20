@@ -206,6 +206,7 @@ namespace LiBookerWasmApp.Pages.Publication
             }
         }
 
+        
         public void Dispose()
         {
             this.publicationsCts?.Cancel();

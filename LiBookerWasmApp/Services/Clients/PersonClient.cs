@@ -44,7 +44,7 @@ public class PersonClient
         }
     }
 
-    public async Task<ApiResponse<Person?>> GetByIdAsync(int id, CancellationToken ct = default)
+    public async Task<ApiResponse<Person?>> GetPersonByIdAsync(int id, CancellationToken ct = default)
     {
         try
         {

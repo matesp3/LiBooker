@@ -1,4 +1,5 @@
 ﻿using LiBooker.Shared.DTOs;
+using LiBooker.Shared.Roles;
 using LiBookerWebApi.Endpoints.ResultWrappers;
 using LiBookerWebApi.Model;
 using LiBookerWebApi.Models;
@@ -17,7 +18,7 @@ namespace LiBookerWebApi.Services
             using var transaction = await this.db.Database.BeginTransactionAsync(ct);
             try
             {
-                var emailTaken = await IsEmailTakenAsync(userManager, dto.Email.ToLower(), ct); 
+                var emailTaken = await IsEmailTakenAsync(userManager, dto.Email.ToLower(), ct);
                 if (emailTaken)
                     RegistrationResult.EmailAlreadyUsed();
 
@@ -31,7 +32,7 @@ namespace LiBookerWebApi.Services
 
                 // UserManager in EF Core automatically detects existing DB transaction of the DbContext
                 var identityResult = await userManager.CreateAsync(newUser, dto.Password);
-
+                
                 if (!identityResult.Succeeded) // if Identity fails (e.g. weak password)
                 {
                     await transaction.RollbackAsync(ct);
@@ -39,8 +40,8 @@ namespace LiBookerWebApi.Services
                     var errors = string.Join(", ", identityResult.Errors.Select(e => e.Description));
                     return RegistrationResult.Failure($"Failed to create user: {errors}");
                 }
-                // step 3 - assignment of a role (optional)
-                 await userManager.AddToRoleAsync(newUser, "User");
+                // step 3 - assignment of a default role
+                await userManager.AddToRoleAsync(newUser, UserRolesExtensions.GetRoleName(UserRoles.User));
 
                 // step 4 - OK, commit transaction
                 await transaction.CommitAsync(ct);
@@ -53,12 +54,6 @@ namespace LiBookerWebApi.Services
                 // optionally log the exception here
                 return RegistrationResult.Failure($"An unexpected error occurred: {ex.Message}");
             }
-        }
-
-        public Task<RegistrationResult> CreateAdminAsync(UserManager<ApplicationUser> userManager, PersonRegistration dto, CancellationToken ct)
-        {
-
-            throw new NotImplementedException();
         }
 
         private async Task<bool> IsEmailTakenAsync(UserManager<ApplicationUser> userManager, string loweredEmail, CancellationToken ct = default)

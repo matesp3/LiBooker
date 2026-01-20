@@ -44,9 +44,7 @@ namespace LiBookerWebApi.Services
                     Gender = p.Gender,
                     Phone = p.Phone,
                     BirthDate = p.BirthDate,
-                    RegisteredAt = p.RegisteredAt,
-                    ReservationCount = _db.Reservations.Count(r => r.PersonId == p.Id),
-                    LoanCount = _db.Loans.Count(l => l.PersonId == p.Id)
+                    RegisteredAt = p.RegisteredAt
                 })
                 .FirstOrDefaultAsync(ct);
         }

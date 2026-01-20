@@ -11,7 +11,10 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorizationBuilder()
+    .AddPolicy(AuthPolicies.RequireLoggedUser, policy => policy.RequireRole(UserRolesExtensions.GetRoleName(UserRoles.User)))
+    .AddPolicy(AuthPolicies.RequireBlogger, policy => policy.RequireRole(UserRolesExtensions.GetRoleName(UserRoles.Blogger)))
+    .AddPolicy(AuthPolicies.RequireAdmin, policy => policy.RequireRole(UserRolesExtensions.GetRoleName(UserRoles.Admin)));
 
 string corsPolicy = string.Empty;
 if (builder.Environment.IsDevelopment())
@@ -98,28 +101,33 @@ async static Task EnsureUserRolesExist(IServiceScope scope)
 
 async static Task EnsureAdminUserExists(IServiceScope scope)
 {
+    // Retrieve IConfiguration from the service provider
+    var config = scope.ServiceProvider.GetRequiredService<IConfiguration>();
+    
+    string? adminEmail = config["LIBOOKER_USER_ADMIN_EMAIL"];
+    if (string.IsNullOrEmpty(adminEmail))
+    {
+         throw new InvalidOperationException("Configuration 'LIBOOKER_USER_ADMIN_EMAIL' is missing.");
+    }
+    
     var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
-    //string adminEmail = "admin@libooker.com";
-    string adminEmail = Environment.GetEnvironmentVariable("LIBOOKER_USER_ADMIN_EMAIL")
-                ?? throw new InvalidOperationException("Environment variable 'LIBOOKER_USER_ADMIN_EMAIL' is not set.");
     var adminUser = await userManager.FindByEmailAsync(adminEmail);
     if (adminUser == null)
     {
         var adminPerson = new PersonRegistration
         {
             FirstName = "Admin",
-            LastName = String.Empty,
+            LastName = "Admin",
             BirthDate = DateTime.Now,
             Email = adminEmail,
             Gender = 'M',
-            Password = Environment.GetEnvironmentVariable("LIBOOKER_USER_ADMIN_PASSWORD")
-                ?? throw new InvalidOperationException("Environment variable 'LIBOOKER_USER_ADMIN_PASSWORD' is not set."),
+            Password = config["LIBOOKER_USER_ADMIN_PASSWORD"] ?? throw new InvalidOperationException("Environment variable 'LIBOOKER_USER_ADMIN_PASSWORD' is not set."),
         };
         var authService = scope.ServiceProvider.GetRequiredService<IAuthService>();
         
-        var res = await authService.CreateAdminAsync(userManager, adminPerson, default);
+        var res = await authService.RegisterUserAsync(userManager, adminPerson, default);
         if (!res.IsSuccessful)
-            throw new InvalidProgramException($"Admin user creation failed at {DateTime.Now}");
+            throw new InvalidProgramException($"Admin user creation failed at {DateTime.Now}. Reason: {res.FailureReason}");
     }
     else // ensuring that existing admin user has admin privileges
     {

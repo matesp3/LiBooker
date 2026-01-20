@@ -1,4 +1,5 @@
 ﻿using LiBooker.Shared.DTOs;
+using LiBookerWebApi.Infrastructure;
 using LiBookerWebApi.Models;
 using LiBookerWebApi.Services;
 using Microsoft.AspNetCore.Identity;
@@ -66,11 +67,12 @@ namespace LiBookerWebApi.Endpoints
 
                 return Results.Ok(new UserInfoResponse()
                 {
+                    PersonId = appUser?.PersonId,
                     Email = appUser?.Email ?? "Unknown",
                     Roles = [.. roles]
                 });
             })
-            .RequireAuthorization();
+            .RequireAuthorization(AuthPolicies.RequireLoggedUser);
         }
 
     }

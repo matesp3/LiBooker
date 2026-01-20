@@ -1,3 +1,4 @@
+using LiBookerWebApi.Infrastructure;
 using LiBookerWebApi.Services;
 
 namespace LiBookerWebApi.Endpoints
@@ -33,6 +34,7 @@ namespace LiBookerWebApi.Endpoints
                     return Results.StatusCode(499);
                 }
             })
+            .RequireAuthorization(AuthPolicies.RequireAdmin)
             .WithName("GetAllPersons");
         }
 
@@ -54,6 +56,7 @@ namespace LiBookerWebApi.Endpoints
                     return Results.StatusCode(499);
                 }
             })
+            .RequireAuthorization(AuthPolicies.RequireLoggedUser)
             .WithName("GetPersonById");
         }
     }

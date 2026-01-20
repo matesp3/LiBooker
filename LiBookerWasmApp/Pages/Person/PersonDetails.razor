@@ -1,0 +1,58 @@
+﻿@page "/person/details"
+@inject PersonClient PersonClient
+@inject AuthenticationStateProvider AuthStateProvider 
+@implements IDisposable
+
+<h3>PersonDetails</h3>
+@if (this.IsLoading)
+{
+    <p><em>Loading...</em></p>
+}
+else if (this.person == null)
+{
+    <p>Person details not found or user is not linked to a person record.</p>
+}
+else
+{
+    <p>Person: @(this.person.FirstName + " " + this.person.LastName) born @this.person.BirthDate</p>
+}
+
+@code {
+    private bool IsLoading = true;
+    private Person? person;
+    private CancellationTokenSource? cts;
+
+    protected override async Task OnInitializedAsync()
+    {
+        this.cts = new CancellationTokenSource();
+        
+        // 1. Získame aktuálny stav prihlásenia
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity?.IsAuthenticated == true)
+        {
+            // 2. Vyčítame PersonId z claimov (ktoré sme tam vložili v kroku 3)
+            var personIdClaim = user.FindFirst("PersonId");
+
+            if (personIdClaim != null && int.TryParse(personIdClaim.Value, out int personId))
+            {
+                // 3. Použijeme ID na volanie API
+                var response = await PersonClient.GetPersonByIdAsync(personId, this.cts.Token);
+                if (response.IsSuccess)
+                {
+                    this.person = response.Data;
+                }
+            }
+        }
+
+        this.IsLoading = false;
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        this.cts?.Cancel();
+        this.cts?.Dispose();
+    }
+}

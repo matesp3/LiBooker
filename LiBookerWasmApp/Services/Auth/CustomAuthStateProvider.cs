@@ -37,17 +37,13 @@ namespace LiBookerWasmApp.Services.Auth
                     var claims = ParseClaimsFromJwt(token);
                     return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity(claims, "jwt")));
                 }
-                catch
-                {
-                    // parsing failed, but token can possible still be valid OPAQUE token
-                    // we can return at least basic identity
+                catch /* parsing failed, but token can possible still be valid OPAQUE token */
+                {     /* we can return at least basic identity */
                     return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity(new[] { new Claim(ClaimTypes.Name, "User") }, "jwt")));
                 }
             }
             else
-            {
                 return await ProcessOpaqueToken();
-            }
         }
 
         /// <summary>
@@ -124,24 +120,13 @@ namespace LiBookerWasmApp.Services.Auth
             var claims = new List<Claim>();
             try
             {
-                // call User Info endpoint
                 // auth header is already set in client
-                var userInfo = await this.httpClient.GetFromJsonAsync<UserInfoResponse>("api/auth/manage/user-info");
-
-                if (!string.IsNullOrEmpty(userInfo?.Email)) // name/email
-                {
-                    claims.Add(new Claim(ClaimTypes.Name, userInfo.Email));
-                    claims.Add(new Claim(ClaimTypes.Email, userInfo.Email));
-                }
-                if (userInfo?.Roles != null) // roles
-                {
-                    foreach (var role in userInfo.Roles)
-                        claims.Add(new Claim(ClaimTypes.Role, role));
-                }
+                var userInfo = await this.httpClient.GetFromJsonAsync<UserInfoResponse>("/api/auth/user-info");
+                ParseClaims(claims, userInfo);
             }
             catch (Exception ex) // if request fails (e.g. expired token), its okay
             {
-                //Console.WriteLine($"DEBUG: Failed to fetch user info: {ex.Message}");
+                Console.WriteLine($"DEBUG: Failed to fetch user info: {ex.Message}");
                 _ = ex;
                 // Fallback in case loading info failed
                 if (claims.Count == 0) claims.Add(new Claim(ClaimTypes.Name, "User"));
@@ -154,6 +139,30 @@ namespace LiBookerWasmApp.Services.Auth
             else // if no info and token failed, then token is probably invalid/expired
             {
                 return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
+            }
+        }
+
+        /// <summary>
+        /// Adds claims retrieved from userInfo to prepared claims structure
+        /// </summary>
+        /// <param name="claims"></param>
+        /// <param name="userInfo"></param>
+        private static void ParseClaims(List<Claim> claims, UserInfoResponse? userInfo)
+        {
+            if (!string.IsNullOrEmpty(userInfo?.Email)) // name/email
+            {
+                claims.Add(new Claim(ClaimTypes.Name, userInfo.LoginName));
+                claims.Add(new Claim(ClaimTypes.Email, userInfo.Email));
+
+            }
+            if (userInfo?.PersonId is not null) // custom claim person ID
+            {
+                claims.Add(new Claim("PersonId", userInfo.PersonId.Value.ToString()));
+            }
+            if (userInfo?.Roles != null) // roles
+            {
+                foreach (var role in userInfo.Roles)
+                    claims.Add(new Claim(ClaimTypes.Role, role));
             }
         }
 

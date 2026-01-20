@@ -15,6 +15,9 @@ namespace LiBookerWasmApp
             builder.RootComponents.Add<App>("#app");
 
             string apiBase = ConfigureApiServices(builder);
+    
+            // 0. registering own handler
+            builder.Services.AddTransient<CustomAuthorizationMessageHandler>();
 
             // 1. registration of our own storage service
             builder.Services.AddScoped<IBrowserStorage, BrowserStorage>();
@@ -58,11 +61,14 @@ namespace LiBookerWasmApp
             builder.Services.AddHttpClient<PersonClient>(client =>
             {
                 client.BaseAddress = new Uri(apiBase);
-            });
+            })
+            .AddHttpMessageHandler<CustomAuthorizationMessageHandler>(); // important for authorization purpose
+
             builder.Services.AddHttpClient<PublicationClient>(client =>
             {
                 client.BaseAddress = new Uri(apiBase);
-            });
+            })
+            .AddHttpMessageHandler<CustomAuthorizationMessageHandler>();
 
             return apiBase;
         }
