@@ -36,7 +36,7 @@
                             </div>
                         </a>
 
-                        <button class="btn btn-link btn-sm text-secondary text-decoration-none" @onclick="Logout">Log out</button>
+                        <button class="btn btn-link btn-sm text-secondary text-decoration-none" @onclick="LogoutAsync">Log out</button>
                     </Authorized>
                     <NotAuthorized>
                         <a href="login" class="me-2 text-nowrap">Log in</a>
@@ -58,7 +58,7 @@
 </div>
 
 @code {
-    private async Task Logout()
+    private async Task LogoutAsync()
     {
         await AuthProvider.LogoutAsync();
         Navigation.NavigateTo("/login?loggedOut=true");

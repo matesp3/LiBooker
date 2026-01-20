@@ -111,9 +111,8 @@
         var response = await this.AuthProvider.RegisterAsync(this.RegisterModel);
         if (response.Success)
         {
-            // after successful registration redirecting to login
-            // (optionally, we can login directly in case when api sends token directly within registration response)
-            this.Navigation.NavigateTo("/login");
+            // after successful registration redirecting to login with message of successful registration
+            this.Navigation.NavigateTo("/login?registeredNow=true");
         }
         else
         {

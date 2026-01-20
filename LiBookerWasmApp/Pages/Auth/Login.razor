@@ -26,6 +26,13 @@
                 <i class="bi bi-exclamation-circle me-2"></i> @this.ErrorMessage
             </div>
         }
+        
+        @if (!string.IsNullOrEmpty(this.InfoMessage))
+        {
+            <div class="alert alert-success text-center">
+                <i class="bi bi-info-circle me-2"></i> @this.InfoMessage
+            </div>
+        }
 
         <EditForm Model="@this.LoginModel" OnValidSubmit="HandleLogin">
             <DataAnnotationsValidator />
@@ -62,14 +69,35 @@
 </div>
 
 @code {
+    // automatic linking of query parametra ?loggedOut=true
+    [SupplyParameterFromQuery]
+    public bool LoggedOut { get; set; } = false;
+    // automatic linking of query parametra ?registeredNow=true
+    [SupplyParameterFromQuery]
+    public bool RegisteredNow { get; set; } = false;
+
     private LiBooker.Shared.DTOs.Login LoginModel = new();
     private string? ErrorMessage;
+    private string? InfoMessage;
     private bool IsProcessing = false;
+
+    protected override void OnInitialized()
+    {
+        if (this.LoggedOut)
+        {
+            this.InfoMessage = "You have been successfully logged out.";
+        }
+        else if (this.RegisteredNow)
+        {
+            this.InfoMessage = "Registration successful! Please log in with your new account.";
+        }
+    }
 
     private async Task HandleLogin()
     {
         this.IsProcessing = true;
         this.ErrorMessage = null;
+        this.InfoMessage = null;
 
         try
         {
