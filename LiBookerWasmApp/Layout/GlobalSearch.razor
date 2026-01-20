@@ -2,7 +2,7 @@
     <span class="explore-label">explore</span>
     
     <div class="position-relative search-input-wrapper">
-        <div class="input-group">
+        <div class="input-group modern-search-pill">
             <span class="input-group-text">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-search" viewBox="0 0 16 16">
                     <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z" />
@@ -11,15 +11,14 @@
 
             <input type="text"
                    class="form-control"
-                   placeholder="Search title / author / genre..."
+                   placeholder="Search..."
                    @bind="SearchTerm"
                    @bind:event="oninput"
                    @onfocus="() => this.showSearchResults = true"
                    @onblur="OnSearchBlur"
                    aria-expanded="@(this.showSearchResults ? "true" : "false")"
                    autocomplete="off" />
-
-            <!-- Clear Button -->
+            
             @if (!string.IsNullOrEmpty(this.SearchTerm))
             {
                 <button class="btn" type="button" @onclick="ClearSearch" title="Clear search">
@@ -30,12 +29,11 @@
             }
         </div>
 
-        <ul class="dropdown-menu w-100 shadow @(this.showSearchResults && !string.IsNullOrEmpty(this.SearchTerm) ? "show" : "")"
-            style="max-height: 300px; overflow-y: auto;">
-            
+        <ul class="dropdown-menu w-100 shadow mt-2 @(this.showSearchResults && !string.IsNullOrEmpty(this.SearchTerm) ? "show" : "")"
+            style="max-height: 300px; overflow-y: auto; border-radius: 12px;">
             @if (this.isSearching)
             {
-                <li><span class="dropdown-item-text text-muted text-center">Searching...</span></li>
+                <li><span class="dropdown-item-text text-muted text-center py-3">Searching...</span></li>
             }
             else if (this.searchResults.Any())
             {
@@ -43,11 +41,11 @@
                 var books = this.searchResults.OfType<BookMatch>().ToList();
                 if (books.Any())
                 {
-                    <li><h6 class="dropdown-header font-weight-bold text-uppercase mt-2">Books</h6></li>
+                    <li><h6 class="dropdown-header font-weight-bold text-uppercase mt-2 px-3">Books</h6></li>
                     @foreach (var book in books)
                     {
                         <li>
-                            <button class="dropdown-item search-item d-flex flex-column justify-content-center py-2"
+                            <button class="dropdown-item search-item d-flex flex-column justify-content-center py-2 px-3"
                                     type="button"
                                     @onmousedown="() => SelectSearchResultItem(book)">
                                 <div class="d-flex w-100 justify-content-between align-items-center">
@@ -61,7 +59,7 @@
                     }
                     @if(this.searchResults.OfType<AuthorMatch>().Any() || this.searchResults.OfType<GenreMatch>().Any()) 
                     { 
-                        <li><hr class="dropdown-divider"></li> 
+                        <li><hr class="dropdown-divider mx-2"></li> 
                     }
                 }
 
@@ -69,11 +67,11 @@
                 var authors = this.searchResults.OfType<AuthorMatch>().ToList();
                 if (authors.Any())
                 {
-                    <li><h6 class="dropdown-header font-weight-bold text-uppercase mt-2">Authors</h6></li>
+                    <li><h6 class="dropdown-header font-weight-bold text-uppercase mt-2 px-3">Authors</h6></li>
                     @foreach (var author in authors)
                     {
                         <li>
-                            <button class="dropdown-item search-item d-flex flex-column justify-content-center py-2"
+                            <button class="dropdown-item search-item d-flex flex-column justify-content-center py-2 px-3"
                                     type="button"
                                     @onmousedown="() => SelectSearchResultItem(author)">
                                 <div class="d-flex w-100 justify-content-between align-items-center">
@@ -85,7 +83,7 @@
                     }
                     if (this.searchResults.OfType<GenreMatch>().Any())
                     {
-                        <li><hr class="dropdown-divider"></li>
+                        <li><hr class="dropdown-divider mx-2"></li>
                     }
                 }
 
@@ -93,11 +91,11 @@
                 var genres = this.searchResults.OfType<GenreMatch>().ToList();
                 if (genres.Any())
                 {
-                    <li><h6 class="dropdown-header font-weight-bold text-uppercase mt-2">Genres</h6></li>
+                    <li><h6 class="dropdown-header font-weight-bold text-uppercase mt-2 px-3">Genres</h6></li>
                     @foreach (var genre in genres)
                     {
                         <li>
-                            <button class="dropdown-item search-item d-flex flex-column justify-content-center py-2"
+                            <button class="dropdown-item search-item d-flex flex-column justify-content-center py-2 px-3"
                                     type="button"
                                     @onmousedown="() => SelectSearchResultItem(genre)">
                                 <div class="d-flex w-100 justify-content-between align-items-center">
@@ -111,7 +109,7 @@
             }
             else
             {
-                <li><span class="dropdown-item-text text-muted text-center">No results found.</span></li>
+                <li><span class="dropdown-item-text text-muted text-center py-3">No results found.</span></li>
             }
         </ul>
     </div>

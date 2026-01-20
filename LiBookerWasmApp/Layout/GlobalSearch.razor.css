@@ -1,56 +1,113 @@
 .global-search-container {
     display: flex;
     align-items: center;
-    gap: 1rem;
-    width: 100%;
-    max-width: 600px;
+    padding: 5px;
+    flex: 1; 
+    min-width: 0; 
+    margin-right: 1rem; 
 }
 
 .explore-label {
-    font-weight: 500;
-    color: #495057;
-    text-transform: lowercase;
-    font-size: 1.1rem;
-    white-space: nowrap;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 1.5px;
+    color: #6c757d;
+    margin-right: 15px;
+    user-select: none;
+    white-space: nowrap; 
 }
 
+/* --- WRAPPER FOR INPUT --- */
 .search-input-wrapper {
-    flex-grow: 1;
+    flex-grow: 1; 
+    min-width: 0; 
+    position: relative;
+    display: flex;
 }
 
-/* Move border and radius from children to the parent group */
-.global-search-container .input-group {
-    border: 1px solid #dee2e6;
-    border-radius: 0.375rem; /* Standard Bootstrap rounding */
+/* FIX: Dropdown Positioning & Styling */
+.search-input-wrapper .dropdown-menu {
+    top: 100% !important;
+    left: 0;
+    margin-top: 0.5rem; 
+    width: 100%; 
+    
+    /* Border color changed to match the input focus color (#a0c4ff) */
+    /* This creates a consistent look with the active search bar */
+    border: 1px solid #a0c4ff !important; 
+}
+
+/* --- SEARCH "PILL" APPEARANCE --- */
+.modern-search-pill {
+    border-radius: 50px;
     background-color: #fff;
-    transition: border-color .15s ease-in-out, box-shadow .15s ease-in-out;
-    overflow: hidden; /* Ensures contents respect the radius */
+    border: 1px solid #e9ecef;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    transition: all 0.3s ease;
+    overflow: hidden;
+    padding-left: 5px;
+    padding-right: 5px;
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    width: 100%; 
 }
 
-/* When ANY element inside has focus, light up the parent container */
-.global-search-container .input-group:focus-within {
-    border-color: #86b7fe;
-    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+.modern-search-pill:focus-within {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+    border-color: #a0c4ff;
+    transform: translateY(-1px);
     z-index: 5;
 }
 
-/* Remove default borders and focus rings from inner elements so the parent handles it */
-.global-search-container .input-group .form-control,
-.global-search-container .input-group .input-group-text,
-.global-search-container .input-group .btn {
-    border: none !important;
-    background-color: transparent !important; /* Let parent background show through */
+/* --- INNER ELEMENT VISUALS --- */
+.modern-search-pill .input-group-text,
+.modern-search-pill .btn {
+    background-color: transparent;
+    border: none;
+    color: #adb5bd;
+    flex-shrink: 0; 
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modern-search-pill input.form-control {
+    border: none;
     box-shadow: none !important;
+    background-color: transparent;
+    font-size: 0.95rem;
+    min-width: 50px; 
+    flex-grow: 1;
+    text-overflow: ellipsis; 
 }
 
+.modern-search-pill .btn {
+    border-radius: 50%;
+    color: #adb5bd;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+}
+
+.modern-search-pill .btn:hover {
+    background-color: #f8f9fa;
+    color: #dc3545;
+}
+
+/* --- SEARCH RESULTS STYLES --- */
 .search-item {
-    height: 60px;
+    min-height: 60px;
     border-bottom: 1px solid #f0f0f0;
+    width: 100%;
+    text-align: left;
+    background: none;
+    border-left: 0; border-right: 0; border-top: 0;
 }
 
-.search-item:last-child {
-    border-bottom: none;
-}
+.search-item:last-child { border-bottom: none; }
+.search-item:hover, .search-item:focus { background-color: #f8f9fa; }
 
 .dropdown-header {
     font-size: 0.75rem;
@@ -58,11 +115,21 @@
     color: #adb5bd;
     padding-bottom: 0.25rem;
 }
+.dropdown-divider { margin: 0; }
 
-.dropdown-divider {
-    margin: 0;
+/* --- RESPONSIVENESS --- */
+@media (max-width: 850px) {
+    .explore-label {
+        display: none; 
+    }
 }
 
-.form-select {
-    cursor: pointer;
+@media (max-width: 641px) {
+    .global-search-container {
+        padding: 0; 
+        margin-right: 0.5rem;
+    }
+    .modern-search-pill {
+        height: 34px; 
+    }
 }

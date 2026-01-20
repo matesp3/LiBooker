@@ -9,85 +9,103 @@ main {
 }
 
 .sidebar {
-    /* dark deep blue gradient */
     background-image: linear-gradient(180deg, #020d1f 0%, #0a2540 100%);
 }
 
+/* --- HEADER CONFIGURATION --- */
 .top-row {
-    /* Softer, very light blueish-white background */
     background-color: #f8fbff;
-    /* Subtler border color to match the soft theme */
     border-bottom: 1px solid #eef2f6;
-    justify-content: flex-end;
-    height: 3.5rem;
+    /* Use min-height instead of fixed height to allow expansion */
+    min-height: 3.5rem;
+    height: auto;
     display: flex;
     align-items: center;
-    position: sticky; /* Ensure it is a positioning context (if sticky is used) or explicit relative */
-    /* If sticky is removed or changed in media queries, we might need 'position: relative' here to anchor the absolute child */
+    /* Ensure the search dropdown floats above everything */
+    z-index: 100 !important;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
 }
 
-/* Ensure top-row creates a positioning context */
-.top-row {
-     position: relative; /* Fallback/Base */
+/* --- LINKS STYLING --- */
+.top-row ::deep a, .top-row ::deep .btn-link {
+    white-space: nowrap;
+    text-decoration: none;
+    color: #43546b;
 }
 
-/* --- CENTERING LOGIC --- */
-.search-area {
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    width: 100%;
-    max-width: 600px; /* Matches GlobalSearch max-width */
-    display: flex;
-    justify-content: center;
-    pointer-events: none; /* Crucial: allows clicks to pass through to "About" link if search bar area overlaps it transparently */
-    padding: 0 1rem; /* prevent touching edges implementation */
+.top-row ::deep a:hover, .top-row ::deep .btn-link:hover {
+    text-decoration: underline;
+    color: #0d6efd;
 }
 
-/* Re-enable pointer events for the actual search interaction */
-.search-area ::deep > * {
-    pointer-events: auto;
-}
-/* ----------------------------- */
 
-    .top-row ::deep a, .top-row ::deep .btn-link {
-        white-space: nowrap;
-        margin-left: 1.5rem;
-        text-decoration: none;
-        color: #43546b; /* Darker blue-grey text for better readability */
-        position: relative; /* Ensure link sits above if needed, though margins usually handle it */
-        z-index: 1; /* Keep user links clickable above the search layer if they overlap */
-    }
+/* =========================================
+   RESPONSIVE BEHAVIOR
+   ========================================= */
 
-    .top-row ::deep a:hover, .top-row ::deep .btn-link:hover {
-        text-decoration: underline;
-        color: #0d6efd; /* Bootstrap primary blue on hover */
-    }
-
-    .top-row ::deep a:first-child {
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-@media (max-width: 640.98px) {
+/* --- 1. DESKTOP VIEW (> 900px) --- */
+/* Single row layout: Search on left/center, Links on right */
+@media (min-width: 900.01px) {
     .top-row {
+        flex-direction: row;
         justify-content: space-between;
     }
 
-    .top-row ::deep a, .top-row ::deep .btn-link {
-        margin-left: 0;
+    .layout-search-wrapper {
+        flex: 1;
+        max-width: 500px; /* Limit search width on big screens */
+        margin-right: 20px;
     }
     
-    /* On mobile, we might want the search bar to take available space or hide */
-    .search-area {
-         position: static; /* Disable absolute centering on small screens */
-         transform: none;
-         flex-grow: 1;
-         margin-right: 1rem;
+    .layout-auth-wrapper {
+        flex-shrink: 0; /* Prevent links from wrapping */
     }
 }
 
+/* --- 2. TABLET / COMPACT LAPTOP VIEW (641px - 900px) --- */
+/* Fix for overlapping: Stack items vertically with LINKS ON TOP */
+@media (min-width: 641px) and (max-width: 900px) {
+    .top-row {
+        /* This places the 2nd HTML element (Auth) visually first/top */
+        flex-direction: column-reverse; 
+        align-items: stretch; /* Full width for children */
+        gap: 10px;
+        padding-bottom: 10px;
+    }
+
+    .layout-auth-wrapper {
+        justify-content: flex-end; /* Align links to the right */
+        width: 100%;
+    }
+
+    .layout-search-wrapper {
+        width: 100%; /* Search takes full width of the second row */
+    }
+}
+
+/* --- 3. MOBILE VIEW (< 641px) --- */
+/* Standard mobile flow */
+@media (max-width: 640.98px) {
+    .top-row {
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    
+    .layout-search-wrapper {
+        flex: 1 1 100%; /* Break to new line on very small screens if needed */
+        order: 2; /* Put search below links on mobile too similar to tablet */
+    }
+    
+    .layout-auth-wrapper {
+        flex: 1 1 100%;
+        justify-content: flex-end;
+        order: 1;
+    }
+}
+
+
+/* --- SIDEBAR LAYOUT (Default Blazor Styles) --- */
 @media (min-width: 641px) {
     .page {
         flex-direction: row;
@@ -98,18 +116,6 @@ main {
         height: 100vh;
         position: sticky;
         top: 0;
-    }
-
-    .top-row {
-        position: sticky;
-        top: 0;
-        z-index: 10; /* Increased z-index to ensure search dropdown floats above content properly */
-    }
-
-    .top-row.auth ::deep a:first-child {
-        flex: 1;
-        text-align: right;
-        width: 0;
     }
 
     .top-row, article {
