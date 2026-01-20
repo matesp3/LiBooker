@@ -1,0 +1,187 @@
+﻿@page "/person/details/edit"
+@using System.ComponentModel.DataAnnotations
+@inject PersonClient PersonClient
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager Navigation
+@implements IDisposable
+
+<div class="profile-container fade-in">
+    @if (IsLoading)
+    {
+        <div class="loading-state">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p>Loading profile for editing...</p>
+        </div>
+    }
+    else if (editModel == null)
+    {
+         <div class="alert alert-warning" role="alert">
+            <h4 class="alert-heading">Error</h4>
+            <p>Could not load user data.</p>
+        </div>
+    }
+    else
+    {
+        <div class="profile-card">
+            <div class="profile-header">
+                <div class="avatar-circle">
+                    <i class="bi bi-pencil-fill" style="font-size: 2rem;"></i>
+                </div>
+                <h2 class="profile-name">Edit Profile</h2>
+                <span class="profile-badge">Update your details</span>
+            </div>
+
+            <div class="profile-body">
+                <EditForm Model="@editModel" OnValidSubmit="HandleValidSubmit">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary />
+
+                    <div class="profile-section">
+                        <h5 class="section-title">Personal Information</h5>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">First Name</label>
+                                <InputText class="form-control" @bind-Value="editModel.FirstName" />
+                                <ValidationMessage For="@(() => editModel.FirstName)" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Last Name</label>
+                                <InputText class="form-control" @bind-Value="editModel.LastName" />
+                                <ValidationMessage For="@(() => editModel.LastName)" />
+                            </div>
+                             <div class="col-md-6">
+                                <label class="form-label">Birth Date</label>
+                                <InputDate class="form-control" @bind-Value="editModel.BirthDate" />
+                                <ValidationMessage For="@(() => editModel.BirthDate)" />
+                            </div>
+                             <div class="col-md-6">
+                                <label class="form-label">Gender</label>
+                                <InputSelect class="form-select" @bind-Value="editModel.Gender">
+                                    <option value="M">Male</option>
+                                    <option value="F">Female</option>
+                                </InputSelect>
+                                <ValidationMessage For="@(() => editModel.Gender)" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="separator"></div>
+
+                    <div class="profile-section">
+                        <h5 class="section-title">Contact Details</h5>
+                         <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label">Email</label>
+                                <InputText class="form-control" @bind-Value="editModel.Email" />
+                                <ValidationMessage For="@(() => editModel.Email)" />
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Phone</label>
+                                <InputText class="form-control" @bind-Value="editModel.Phone" placeholder="+421..." />
+                                <ValidationMessage For="@(() => editModel.Phone)" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="action-buttons mt-4">
+                        <button type="button" class="btn btn-secondary me-2" @onclick="CancelEdit">Cancel</button>
+                        <button type="submit" class="btn btn-primary btn-save">Save Changes</button>
+                    </div>
+
+                </EditForm>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private bool IsLoading = true;
+    private PersonEditModel? editModel;
+    private int personId;
+    private CancellationTokenSource? cts;
+
+    protected override async Task OnInitializedAsync()
+    {
+        cts = new CancellationTokenSource();
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity?.IsAuthenticated == true)
+        {
+            var personIdClaim = user.FindFirst("PersonId");
+            if (personIdClaim != null && int.TryParse(personIdClaim.Value, out int pid))
+            {
+                personId = pid;
+                var response = await PersonClient.GetPersonByIdAsync(personId, cts.Token);
+                if (response.IsSuccess && response.Data != null)
+                {
+                    // Map DTO to Mutable Model
+                    var p = response.Data;
+                    editModel = new PersonEditModel
+                    {
+                        FirstName = p.FirstName,
+                        LastName = p.LastName,
+                        Email = p.Email,
+                        Phone = p.Phone,
+                        BirthDate = p.BirthDate,
+                        Gender = p.Gender.ToString() // Select binds better to string
+                    };
+                }
+            }
+        }
+        IsLoading = false;
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        if (editModel == null) return;
+
+        // Note: You might need to adjust this call based on your API Client methods.
+        // Assuming you accept a Person object or a specific DTO.
+        // If your API updates via Person object, you need to create one (watch out for 'init').
+        // If you have an UpdatePersonDto, use that.
+        
+        // Example: Mapping back to a DTO for update
+        // var updateDto = new PersonUpdateDto { ... map from editModel ... };
+        // await PersonClient.UpdatePersonAsync(personId, updateDto);
+
+        // Placeholder simulation:
+        Console.WriteLine("Saving data...");
+        await Task.Delay(500); // simulate delay
+        
+        Navigation.NavigateTo("/person/details");
+    }
+
+    private void CancelEdit()
+    {
+        Navigation.NavigateTo("/person/details");
+    }
+
+    public void Dispose()
+    {
+        cts?.Cancel();
+        cts?.Dispose();
+    }
+
+    // Mutable model for the form
+    public class PersonEditModel
+    {
+        [Required]
+        public string FirstName { get; set; } = "";
+        
+        [Required]
+        public string LastName { get; set; } = "";
+
+        [Required] 
+        [EmailAddress]
+        public string Email { get; set; } = "";
+        
+        public string? Phone { get; set; }
+        
+        public DateTime BirthDate { get; set; }
+        
+        public string Gender { get; set; } = "M"; // String specifically for InputSelect compatibility
+    }
+}

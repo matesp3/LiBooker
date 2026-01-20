@@ -5,44 +5,59 @@
 
 <PageTitle>LiBooker - Login</PageTitle>
 
-<div class="auth-container">
-    <h3>Login</h3>
-
-    @if (!string.IsNullOrEmpty(this.ErrorMessage))
-    {
-        <div class="alert alert-danger">@this.ErrorMessage</div>
-    }
-
-    <EditForm Model="@this.LoginModel" OnValidSubmit="HandleLogin">
-        <DataAnnotationsValidator />
+<div class="auth-wrapper fade-in">
+    <div class="auth-card">
         
-        <div class="form-group mb-3">
-            <label>Email</label>
-            <InputText @bind-Value="this.LoginModel.Email" class="form-control" placeholder="name@example.com" />
-            <ValidationMessage For="@(() => this.LoginModel.Email)" />
+        <!-- Header with Icon -->
+        <div class="auth-header text-center">
+            <div class="icon-circle">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M11 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"/>
+                    <path fill-rule="evenodd" d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8zm8-7a7 7 0 0 0-5.468 11.37C3.242 11.226 4.805 10 8 10s4.757 1.225 5.468 2.37A7 7 0 0 0 8 1z"/>
+                </svg>
+            </div>
+            <h3>Welcome Back</h3>
+            <p class="text-muted">Sign in to your account</p>
         </div>
 
-        <div class="form-group mb-3">
-            <label>Password</label>
-            <InputText @bind-Value="this.LoginModel.Password" type="password" class="form-control" placeholder="Password" />
-            <ValidationMessage For="@(() => this.LoginModel.Password)" />
-        </div>
+        @if (!string.IsNullOrEmpty(this.ErrorMessage))
+        {
+            <div class="alert alert-danger text-center">
+                <i class="bi bi-exclamation-circle me-2"></i> @this.ErrorMessage
+            </div>
+        }
 
-        <button type="submit" class="btn btn-primary w-100" disabled="@this.IsProcessing">
-            @if (this.IsProcessing)
-            {
-                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                <span> Logging in...</span>
-            }
-            else
-            {
-                <span>Sign in</span>
-            }
-        </button>
-    </EditForm>
-    
-    <div class="mt-3 text-center">
-        <small>No existing account? <a href="register">Register here</a>.</small>
+        <EditForm Model="@this.LoginModel" OnValidSubmit="HandleLogin">
+            <DataAnnotationsValidator />
+            
+            <div class="form-group mb-4">
+                <label class="form-label">Email</label>
+                <InputText @bind-Value="this.LoginModel.Email" class="form-control" placeholder="name@example.com" />
+                <ValidationMessage For="@(() => this.LoginModel.Email)" />
+            </div>
+
+            <div class="form-group mb-4">
+                <label class="form-label">Password</label>
+                <InputText @bind-Value="this.LoginModel.Password" type="password" class="form-control" placeholder="••••••••" />
+                <ValidationMessage For="@(() => this.LoginModel.Password)" />
+            </div>
+
+            <button type="submit" class="btn btn-auth w-100 mb-3" disabled="@this.IsProcessing">
+                @if (this.IsProcessing)
+                {
+                    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                    <span>Signing in...</span>
+                }
+                else
+                {
+                    <span>Sign in</span>
+                }
+            </button>
+        </EditForm>
+        
+        <div class="auth-footer text-center">
+            <small>Don't have an account? <a href="register" class="auth-link">Create one</a></small>
+        </div>
     </div>
 </div>
 
@@ -65,7 +80,7 @@
             }
             else
             {
-                this.ErrorMessage = "Invalid name or password.";
+                this.ErrorMessage = "Invalid email or password.";
             }
         }
         catch (Exception ex)

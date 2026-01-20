@@ -85,3 +85,147 @@
 .form-select {
     cursor: pointer;
 }
+
+.filters-container {
+    background-color: #ffffff;
+    border: 1px solid #e9ecef;
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+    margin-top: 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+}
+
+.filters-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    font-weight: 700;
+    color: #0a2540; 
+}
+
+.filters-header svg {
+    color: #0a2540;
+}
+
+.filters-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem; /* gap between filters */
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    
+    flex: 1;
+    min-width: 200px;
+    max-width: 320px;
+}
+
+.filter-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #495057;
+    margin: 0;
+}
+
+.custom-select {
+    border-color: #dee2e6;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    padding: 0.5rem 2.25rem 0.5rem 0.75rem;
+    cursor: pointer;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    background-color: #f8f9fa;
+}
+
+.custom-select:hover {
+    background-color: #ffffff;
+    border-color: #adb5bd;
+}
+
+.custom-select:focus {
+    border-color: #3b7dc4;
+    box-shadow: 0 0 0 3px rgba(59, 125, 196, 0.15);
+    background-color: #ffffff;
+}
+
+/* animation */
+.fade-in {
+    animation: fadeIn 0.4s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 500px) {
+    .filter-group {
+        max-width: 100%;
+    }
+}
+
+.image-loading-badge {
+    width: fit-content;
+    min-width: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    
+    margin-bottom: 1.5rem;
+    padding: 0.5rem 1.5rem;
+    
+    border-radius: 50px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+/* HEADER STYLES */
+.text-brand {
+    color: #0a2540;
+    letter-spacing: -0.5px;
+}
+
+.page-header p {
+    margin-top: -5px;
+    font-size: 1.05rem;
+}
+
+/* PAGINATION BUTTONS THEME */
+.btn-theme {
+    background-color: #0a2540;
+    color: #ffffff;
+    border: none;
+    padding: 0.5rem 1.5rem;
+    border-radius: 8px;
+    transition: all 0.2s ease-in-out;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+}
+
+.btn-theme:hover {
+    background-color: #1a3a5c;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(10, 37, 64, 0.2);
+    color: #ffffff;
+}
+
+.btn-theme:disabled {
+    background-color: #e9ecef;
+    color: #adb5bd;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}

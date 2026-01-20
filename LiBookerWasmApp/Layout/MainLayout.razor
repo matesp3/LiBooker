@@ -21,8 +21,22 @@
             <div class="layout-auth-wrapper d-flex align-items-center gap-3">
                 <AuthorizeView>
                     <Authorized>
-                        <span class="me-2 text-truncate" style="max-width: 150px;">Welcome, @(context.User.Identity?.Name)!</span>
-                        <button class="btn btn-link btn-sm" @onclick="Logout">Log out</button>
+                        <a href="person/details" class="user-welcome-chip me-2">
+                            <!-- Avatar part -->
+                            <div class="welcome-avatar">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+                                    <path d="M3 14s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1H3Zm5-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/>
+                                </svg>
+                            </div>
+                            
+                            <!-- Two-line text: Greeting + Name -->
+                            <div class="welcome-text">
+                                <span class="welcome-label">Good day,</span>
+                                <span class="user-name">@(context.User.Identity?.Name)</span>
+                            </div>
+                        </a>
+
+                        <button class="btn btn-link btn-sm text-secondary text-decoration-none" @onclick="Logout">Log out</button>
                     </Authorized>
                     <NotAuthorized>
                         <a href="login" class="me-2 text-nowrap">Log in</a>
@@ -30,7 +44,9 @@
                     </NotAuthorized>
                 </AuthorizeView>
                 
-                <a href="https://learn.microsoft.com/aspnet/core/" target="_blank" class="text-nowrap">About</a>
+                <NavLink href="contact" class="text-nowrap text-muted small text-decoration-none">
+                    Contact
+                </NavLink>
             </div>
 
         </div>
@@ -45,6 +61,6 @@
     private async Task Logout()
     {
         await AuthProvider.LogoutAsync();
-        Navigation.NavigateTo("/");
+        Navigation.NavigateTo("/login?loggedOut=true");
     }
 }

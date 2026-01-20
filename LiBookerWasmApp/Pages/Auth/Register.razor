@@ -1,81 +1,105 @@
 @page "/register"
 @using LiBookerWasmApp.Services.Auth
+@using System.ComponentModel.DataAnnotations
 @inject CustomAuthStateProvider AuthProvider
 @inject NavigationManager Navigation
 
 <PageTitle>LiBooker - Registration</PageTitle>
 
-<div class="auth-container">
-    <h3>Registration of a new user</h3>
-
-    @if (!string.IsNullOrEmpty(this.ErrorMessage))
-    {
-        <div class="alert alert-danger">@this.ErrorMessage</div>
-    }
-
-    <EditForm Model="@this.RegisterModel" OnValidSubmit="HandleRegistration">
-        <DataAnnotationsValidator />
+<div class="auth-wrapper fade-in">
+    <div class="auth-card">
         
-        <div class="row">
-            <div class="col-md-6 mb-3">
-                <label>Name</label>
-                <InputText @bind-Value="this.RegisterModel.FirstName" class="form-control" />
-                <ValidationMessage For="@(() => this.RegisterModel.FirstName)" />
+        <div class="auth-header text-center">
+             <div class="icon-circle">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0Zm4 8c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4Zm-1-.004c-.001-.246-.154-.986-.832-1.664C11.516 10.68 10.289 10 8 10c-2.29 0-3.516.68-4.168 1.332-.678.678-.83 1.418-.832 1.664h10Z"/>
+                </svg>
             </div>
-            <div class="col-md-6 mb-3">
-                <label>Surname</label>
-                <InputText @bind-Value="this.RegisterModel.LastName" class="form-control" />
-                <ValidationMessage For="@(() => this.RegisterModel.LastName)" />
-            </div>
+            <h3>Create Account</h3>
+            <p class="text-muted">Join our community today</p>
         </div>
 
-        <div class="mb-3">
-            <label>Email (will be used as login name)</label>
-            <InputText @bind-Value="this.RegisterModel.Email" class="form-control" />
-            <ValidationMessage For="@(() => this.RegisterModel.Email)" />
-        </div>
+        @if (!string.IsNullOrEmpty(this.ErrorMessage))
+        {
+            <div class="alert alert-danger text-center">@this.ErrorMessage</div>
+        }
+
+        <EditForm Model="@this.RegisterModel" OnValidSubmit="HandleRegistration">
+            <DataAnnotationsValidator />
+            
+            <div class="row g-3">
+                <div class="col-md-6 mb-2">
+                    <label class="form-label">Name</label>
+                    <InputText @bind-Value="this.RegisterModel.FirstName" class="form-control" placeholder="John"/>
+                    <ValidationMessage For="@(() => this.RegisterModel.FirstName)" />
+                </div>
+                <div class="col-md-6 mb-2">
+                    <label class="form-label">Surname</label>
+                    <InputText @bind-Value="this.RegisterModel.LastName" class="form-control" placeholder="Doe"/>
+                    <ValidationMessage For="@(() => this.RegisterModel.LastName)" />
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Email <small class="text-muted">(Login)</small></label>
+                <InputText @bind-Value="this.RegisterModel.Email" class="form-control" placeholder="name@example.com"/>
+                <ValidationMessage For="@(() => this.RegisterModel.Email)" />
+            </div>
+            
+            <div class="mb-3">
+                 <label class="form-label">Mobile number</label>
+                 <InputText @bind-Value="this.RegisterModel.Phone" class="form-control" placeholder="+421 900 ..."/>
+            </div>
+
+            <div class="row g-3">
+                <div class="col-md-6 mb-3">
+                     <label class="form-label">Date of Birth</label>
+                     <InputDate @bind-Value="this.RegisterModel.BirthDate" class="form-control" />
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Gender</label>
+                    <InputSelect @bind-Value="this.RegisterModel.Gender" class="form-select">
+                        <option value="M">Male</option>
+                        <option value="F">Female</option>
+                        <option value="N">Not specified</option>
+                    </InputSelect>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Password</label>
+                <InputText @bind-Value="this.RegisterModel.Password" type="password" class="form-control" placeholder="Choose a strong password"/>
+                <ValidationMessage For="@(() => this.RegisterModel.Password)" />
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label">Repeat Password</label>
+                <InputText @bind-Value="this.RegisterModel.ConfirmPassword" type="password" class="form-control" placeholder="Confirm your password"/>
+                <ValidationMessage For="@(() => this.RegisterModel.ConfirmPassword)" />
+            </div>
+            
+            <button type="submit" class="btn btn-auth w-100 mb-3" disabled="@this.IsProcessing">
+                 @if (this.IsProcessing)
+                {
+                    <span class="spinner-border spinner-border-sm me-2"></span>
+                    <span>Creating account...</span>
+                }
+                else
+                {
+                    <span>Register</span>
+                }
+            </button>
+        </EditForm>
         
-        <div class="mb-3">
-             <label>Mobile number</label>
-             <InputText @bind-Value="this.RegisterModel.Phone" class="form-control" />
+         <div class="auth-footer text-center">
+            <small>Already registered? <a href="login" class="auth-link">Log in here</a></small>
         </div>
-
-        <div class="row">
-            <div class="col-md-6 mb-3">
-                 <label>Birthday date</label>
-                 <InputDate @bind-Value="this.RegisterModel.BirthDate" class="form-control" />
-            </div>
-            <div class="col-md-6 mb-3">
-                <label>Gender</label>
-                <InputSelect @bind-Value="this.RegisterModel.Gender" class="form-select">
-                    <option value="M">Male</option>
-                    <option value="F">Female</option>
-                    <option value="N">None</option>
-                </InputSelect>
-            </div>
-        </div>
-
-        <div class="mb-3">
-            <label>Password</label>
-            <InputText @bind-Value="this.RegisterModel.Password" type="password" class="form-control" />
-            <ValidationMessage For="@(() => this.RegisterModel.Password)" />
-        </div>
-        
-        <button type="submit" class="btn btn-success w-100" disabled="@this.IsProcessing">
-             @if (this.IsProcessing)
-            {
-                <span class="spinner-border spinner-border-sm">Registering...</span>
-            }
-            else
-            {
-                <span>Create an account</span>
-            }
-        </button>
-    </EditForm>
+    </div>
 </div>
 
 @code {
-    private PersonRegistration RegisterModel = new() { BirthDate = DateTime.Now.AddYears(-18), Gender = 'M' };
+    private RegisterViewModel RegisterModel = new() { BirthDate = DateTime.Now.AddYears(-18), Gender = 'M' };
+    
     private string? ErrorMessage;
     private bool IsProcessing = false;
 
@@ -84,8 +108,8 @@
         this.IsProcessing = true;
         this.ErrorMessage = null;
 
-        var success = await this.AuthProvider.RegisterAsync(RegisterModel);
-        if (success)
+        var response = await this.AuthProvider.RegisterAsync(this.RegisterModel);
+        if (response.Success)
         {
             // after successful registration redirecting to login
             // (optionally, we can login directly in case when api sends token directly within registration response)
@@ -93,9 +117,24 @@
         }
         else
         {
-            this.ErrorMessage = "Registration failed. Check input data or whether e-mail is not already taken.";
-            // Optionally, for better UX, display response from API
+            string msg = response.Message?.ToLower() ?? "";
+            if (!string.IsNullOrEmpty(response.Message) &&
+                ((msg.Contains("password") || msg.Contains("must"))
+                || msg.Contains("email")))
+            {
+                this.ErrorMessage = response.Message;
+            }
+            else
+                this.ErrorMessage = "Registration failed. Please check your data or try a different email.";
         }
         this.IsProcessing = false;
+    }
+
+    // ViewModel for form add password validation, whether they are same in both input fields or not
+    public class RegisterViewModel : PersonRegistration
+    {
+        [Required(ErrorMessage = "Please confirm your password")]
+        [Compare(nameof(this.Password), ErrorMessage = "The passwords do not match.")]
+        public string ConfirmPassword { get; set; } = string.Empty;
     }
 }

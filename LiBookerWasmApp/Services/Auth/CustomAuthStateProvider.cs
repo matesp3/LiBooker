@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using System.Security.Claims;
 using System.Text.Json;
 using LiBooker.Shared.DTOs;
+using LiBooker.Shared.ApiResponses;
 using LiBookerWasmApp.Services.Storage;
 using Microsoft.AspNetCore.Components.Authorization;
 
@@ -107,11 +108,16 @@ namespace LiBookerWasmApp.Services.Auth
             NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
         }
 
-        public async Task<bool> RegisterAsync(PersonRegistration registerModel)
+        public async Task<SimpleResponse> RegisterAsync(PersonRegistration registerModel)
         {
             // explicitly defined endpoint due to Person Id
             var response = await this.httpClient.PostAsJsonAsync("/api/auth/register-extended", registerModel);
-            return response.IsSuccessStatusCode;
+            var content = await response.Content.ReadAsStringAsync();
+            return new SimpleResponse
+            { 
+                Success = response.IsSuccessStatusCode,
+                Message = content
+            };
         }
 
         private async Task<AuthenticationState> ProcessOpaqueToken()

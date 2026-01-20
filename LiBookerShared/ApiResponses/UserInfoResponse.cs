@@ -1,5 +1,4 @@
-﻿
-namespace LiBooker.Shared.DTOs
+﻿namespace LiBooker.Shared.ApiResponses
 {
     // wrapper class for response from /manage/user-info
     public class UserInfoResponse

@@ -48,6 +48,67 @@ main {
     color: #0d6efd;
 }
 
+/* User Welcome Chip Styles */
+.user-welcome-chip {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 6px 20px 6px 8px; 
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 50px;
+    text-decoration: none;
+    transition: all 0.2s ease-in-out;
+    cursor: pointer;
+    height: 48px;
+}
+
+.user-welcome-chip:hover {
+    background-color: #ffffff;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    transform: translateY(-1px);
+    border-color: #dbe4ef;
+}
+
+/* Avatar - Icon Container */
+.welcome-avatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+    width: 34px;           
+    height: 34px;
+    
+    background-color: #e3f2fd;
+    color: #0a2540;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+/* Text Container - two lines */
+.welcome-text {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    line-height: 1.2;
+    text-align: left;
+}
+
+.welcome-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #8898aa;
+    font-weight: 600;
+}
+
+.user-name {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #0a2540; 
+    white-space: nowrap;
+}
+
 
 /* =========================================
    RESPONSIVE BEHAVIOR

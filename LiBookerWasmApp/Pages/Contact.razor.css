@@ -1,0 +1,137 @@
+/* Page Title */
+.text-brand {
+    color: #0a2540;
+}
+
+/* Contact Cards Styling */
+.contact-card {
+    background-color: #ffffff;
+    border: 1px solid #e9ecef;
+    border-radius: 16px;
+    padding: 2rem;
+    text-align: center;
+    transition: transform 0.2s, box-shadow 0.2s;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+    
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.contact-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+}
+
+.contact-card h5 {
+    font-weight: 700;
+    color: #0a2540;
+    margin-bottom: 0.75rem;
+}
+
+.contact-card p {
+    color: #6c757d;
+    margin: 0;
+    line-height: 1.6;
+}
+
+/* Icon Circle Styling*/
+.icon-circle {
+    width: 70px;
+    height: 70px;
+    background-color: #dbe9ff; 
+    color: #0a2540;           
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 8px 20px rgba(10, 37, 64, 0.12); 
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Zabezpe?íme, že aj SVG vo vnútri narastie (pôvodne majú inline width="24") */
+.icon-circle svg {
+    width: 32px;
+    height: 32px;
+}
+
+/* Efekt pri nabehnutí na celú kartu - ikona sa jemne pohne */
+.contact-card:hover .icon-circle {
+    transform: scale(1.05);
+    box-shadow: 0 10px 25px rgba(10, 37, 64, 0.18);
+}
+
+/* Info Box (Hours) */
+.info-box {
+    background-color: #f8f9fa;
+    border-radius: 16px;
+    padding: 2rem;
+    border: 1px solid #e9ecef;
+}
+
+.info-box h4 {
+    color: #0a2540;
+    font-weight: 700;
+}
+
+/* Map Placeholder Styling */
+.map-placeholder {
+    background: linear-gradient(135deg, #0a2540 0%, #1a3a5c 100%);
+    border-radius: 16px;
+    padding: 2rem;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    min-height: 250px;
+}
+
+.map-content h5 {
+    font-weight: 700;
+    margin-bottom: 1rem;
+}
+
+.map-content p {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+/* Animations */
+.fade-in {
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Small copy button styling */
+.btn-copy-small {
+    background-color: transparent;
+    border: none;
+    color: #ced4da; /* Subtler gray */
+    
+    width: 24px;
+    height: 24px;
+    
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+    padding: 0;
+}
+
+.btn-copy-small:hover {
+    color: #0a2540;
+    background-color: #e9ecef;
+    transform: scale(1.1);
+}
+
+.btn-copy-small:active {
+    transform: scale(0.9);
+}

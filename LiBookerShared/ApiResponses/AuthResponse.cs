@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace LiBooker.Shared.DTOs
+namespace LiBooker.Shared.ApiResponses
 {
     // Response from Microsoft Identity API (/login)
     public class AuthResponse
