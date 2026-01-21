@@ -62,9 +62,14 @@ namespace LiBookerWasmApp.Services.Clients
         /// </summary>
         /// <param name="ct"></param>
         /// <returns></returns>
-        public async Task<ApiResponse<int>> GetPublicationsCountAsync(CancellationToken ct = default)
+        public async Task<ApiResponse<int>> GetPublicationsCountAsync(int? bookId, int? authorId, int? genreId, 
+            PublicationAvailability availability, CancellationToken ct = default)
         {
-            string requestUrl = "api/publications/count";
+            string requestUrl = "api/publications/count?" +
+                $"{(bookId.HasValue ? $"bookId={bookId.Value}&" : string.Empty)}" +
+                $"{(authorId.HasValue ? $"authorId={authorId.Value}&" : string.Empty)}" +
+                $"{(genreId.HasValue ? $"genreId={genreId.Value}&" : string.Empty)}" +
+                $"onlyAvailable={(availability == PublicationAvailability.AvailableOnly)}";
             return await ApiClient<int>.GetJsonResponseAsync(requestUrl, _http, ct);
         }
 

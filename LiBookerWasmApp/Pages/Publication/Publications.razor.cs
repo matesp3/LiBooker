@@ -47,6 +47,10 @@ namespace LiBookerWasmApp.Pages.Publication
         /// <summary>Max publications per page</summary>
         public static int PageSize => pageSize;
 
+        private int TotalPages => this.totalPublications < 1
+            ? 1
+            : (int)Math.Ceiling(this.totalPublications / (double)PageSize);
+
         // here we respond to query parameter changes
         protected override async Task OnParametersSetAsync()
         {
@@ -152,7 +156,8 @@ namespace LiBookerWasmApp.Pages.Publication
         {
             try
             {
-                var result = await PublicationClient.GetPublicationsCountAsync(token);
+                var result = await PublicationClient.GetPublicationsCountAsync(this.bookId, this.authorId, 
+                    this.genreId, PublicationParams.ParseAvailabilityParam(this.filterAvailability), token);
                 if (result.IsSuccess)
                 {
                     this.totalPublications = result.Data;
@@ -242,6 +247,24 @@ namespace LiBookerWasmApp.Pages.Publication
             }
         }
 
+        private async Task FirstPage()
+        {
+            if (this.currentPage > 1)
+            {
+                this.currentPage = 1;
+                await LoadPublications();
+            }
+        }
+
+        private async Task LastPage()
+        {
+            var maxPage = this.TotalPages;
+            if (this.currentPage < maxPage)
+            {
+                this.currentPage = maxPage;
+                await LoadPublications();
+            }
+        }
         
         public void Dispose()
         {

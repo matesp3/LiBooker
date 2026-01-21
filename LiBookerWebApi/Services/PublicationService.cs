@@ -61,9 +61,24 @@ namespace LiBookerWebApi.Services
                 ).ToListAsync(ct);
         }
 
-        public async Task<int> GetPublicationsCountAsync(CancellationToken ct)
+        public async Task<int> GetPublicationsCountAsync(int? bookId, int? authorId, int? genreId, bool onlyAvailable, CancellationToken ct)
         {
-            return await _db.Publications.CountAsync(ct);
+            var query = _db.Publications
+                .AsNoTracking()
+                .AsQueryable();
+            if (onlyAvailable)
+                query = query.Where(p => p.Copies!.Any(c => // must have at least one copy that meets criteria = (is available == true)
+                    c.Loans == null || c.Loans.Any(l => l.ReturnedAt != null && l.ReturnedAt <= DateTime.Today))
+                );
+
+            if (bookId.HasValue)
+                query = query.Where(p => p.BookId == bookId);
+            if (authorId.HasValue)
+                query = query.Where(p => p.Book.BookAuthors!.Any(ba => ba.AuthorId == authorId));
+            if (genreId.HasValue)
+                query = query.Where(p => p.Book.BookGenres!.Any(bg => bg.GenreId == genreId));
+
+            return await query.CountAsync(ct);
         }
 
         public async Task<List<PublicationMainInfo>> GetPublicationsAsync(
@@ -157,11 +172,12 @@ namespace LiBookerWebApi.Services
             IQueryable<Models.Entities.Publication> query)
         {
             // 1. Availability filter
-            query = availability switch
-            {
-            PublicationAvailability.AvailableOnly => query.Where(p => p.Copies != null && p.Copies.Any(v => // Publication is available if at least one of its copies is available
-                    v.Loans == null || !v.Loans.Any(vp =>   // has no loans OR has loans but none are active
-                        vp.ReturnedAt == null || vp.ReturnedAt > today))),  // not returned yet OR returned in the future
+            query = availability switch // p.Copies.Any() translates to SQL "EXISTS". 
+            { // It ensures the Publication is selected only if we find at least one Copy where the inner condition is true (Copy is available).
+                PublicationAvailability.AvailableOnly =>
+                    query.Where(p => p.Copies!.Any(
+                        c => c.Loans == null || c.Loans.Any(l => l.ReturnedAt != null && l.ReturnedAt <= today))
+                    ),
                 _ => query
             };
 

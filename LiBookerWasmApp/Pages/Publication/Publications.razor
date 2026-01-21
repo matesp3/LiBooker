@@ -125,18 +125,28 @@ else
         }
     </div>
 
-    var totalPages = (int)Math.Ceiling(this.totalPublications / (1.0 * Math.Max(PageSize, 1) ));
-    
     <div class="pagination-container">
+        <button class="btn btn-theme me-1" @onclick="FirstPage" disabled="@(this.currentPage <= 1 || this.isLoading)" 
+                title="First Page" style="padding: 0 10px; min-width: 40px;">
+            <span>&laquo;</span>
+        </button>
+
         <button class="btn btn-theme" @onclick="PreviousPage" disabled="@(this.currentPage <= 1 || this.isLoading)">
             <span>‹ Previous</span>
         </button>
-        <div class="pagination-info">
-            <span class="current-page">Page @this.currentPage of @totalPages</span>
-                <span class="total-items">(@this.totalPublications total publications)</span>
+        
+        <div class="pagination-info mx-2">
+            <span class="current-page">Page @this.currentPage of @this.TotalPages</span>
+            <span class="total-items">(@this.totalPublications total publications)</span>
         </div>
-        <button class="btn btn-theme" @onclick="NextPage" disabled="@(this.currentPage >= totalPages || this.isLoading)">
+        
+        <button class="btn btn-theme" @onclick="NextPage" disabled="@(this.currentPage >= this.TotalPages || this.isLoading)">
             <span>Next ›</span>
+        </button>
+
+        <button class="btn btn-theme ms-1" @onclick="LastPage" disabled="@(this.currentPage >= this.TotalPages || this.isLoading)" 
+                title="Last Page" style="padding: 0 10px; min-width: 40px;">
+            <span>&raquo;</span>
         </button>
     </div>
 }

@@ -170,15 +170,26 @@ namespace LiBookerWebApi.Endpoints
 
         private static void MapGetPublicationsCountEndpoint(RouteGroupBuilder group, bool durLoggingEnabled)
         {
-            group.MapGet("/count", async (Services.IPublicationService svc, CancellationToken ct) =>
+            group.MapGet("/count", async (Services.IPublicationService svc,
+                int? bookId,
+                int? authorId,
+                int? genreId,
+                bool onlyAvailable = false,
+                CancellationToken ct = default) =>
             {
                 try
                 {
                     Stopwatch? swOverall = null;
                     if (durLoggingEnabled)
                         swOverall = Stopwatch.StartNew();
+                    if(IsNotIdParamOk(ref bookId))
+                        return Results.BadRequest("Invalid bookId parameter.");
+                    if (IsNotIdParamOk(ref authorId))
+                        return Results.BadRequest("Invalid authorId parameter.");
+                    if (IsNotIdParamOk(ref genreId))
+                        return Results.BadRequest("Invalid genreId parameter.");
 
-                    var count = await svc.GetPublicationsCountAsync(ct);
+                    var count = await svc.GetPublicationsCountAsync(bookId, authorId, genreId, onlyAvailable, ct);
 
                     if (durLoggingEnabled)
                     {
