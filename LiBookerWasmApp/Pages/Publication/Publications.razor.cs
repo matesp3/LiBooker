@@ -286,5 +286,11 @@ namespace LiBookerWasmApp.Pages.Publication
         {
             this.NavigationManager.NavigateTo("/publications");
         }
+
+        // handles navigation to details page
+        private void NavigateToDetails(int publicationId)
+        {
+            this.NavigationManager.NavigateTo($"/publication/{publicationId}");
+        }
     }
 }

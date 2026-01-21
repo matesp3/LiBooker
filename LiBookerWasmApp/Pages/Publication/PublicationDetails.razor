@@ -1,5 +1,116 @@
-﻿<h3>PublicationDetails</h3>
-<h1>Hello</h1>
+﻿@page "/publication/{Id:int}"
+
+<div class="container mt-5 mb-5 fade-in">
+    @if (this.isLoading)
+    {
+        <div class="d-flex justify-content-center align-items-center" style="min-height: 400px;">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    }
+    else if (!string.IsNullOrEmpty(this.error) || this.publication is null)
+    {
+        <div class="alert alert-danger shadow-sm border-0">
+            @(this.error ?? "Publication details not available.")
+        </div>
+    }
+    else
+    {
+        <div class="row g-5">
+            <!-- Left Column: Image -->
+            <div class="col-lg-5">
+                <div class="image-box">
+                    @{
+                        var imgUrl = GetImageDataUrl(this.publication.Image);
+                    }
+                    @if (!string.IsNullOrEmpty(imgUrl))
+                    {
+                        <img src="@imgUrl" class="img-fluid" alt="@publication.Title" />
+                    }
+                    else
+                    {
+                        <div class="image-placeholder">
+                            <i class="bi bi-image" style="font-size: 2rem; display: block; margin-bottom: 10px;"></i>
+                            <span>Picture not available</span>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Right Column: Info -->
+            <div class="col-lg-7 d-flex flex-column">
+                <!-- Main Info Card -->
+                <div class="unified-card mb-4">
+                    <h1 class="pub-title">@publication.Title</h1>
+                    <p class="pub-authors">
+                        <span class="label">authors:</span> @this.publication.Author
+                    </p>
+                    
+                    <div class="pub-description mt-4">
+                        <p>
+                            Description of the book is not currently available in the database.
+                            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="row g-4 flex-grow-1">
+                    <!-- Details Box (Now on Left) -->
+                    <div class="col-md-6">
+                        <div class="unified-card">
+                            <h5 class="info-card-title">Details</h5>
+                            <div class="details-content">
+                                <p><strong>Publisher:</strong><br /> @this.publication.Publication</p>
+                                <p><strong>Year:</strong> @this.publication.Year</p>
+                                <div style="margin-top: 1rem; border-top: 1px dashed #dee2e6; padding-top: 0.5rem;">
+                                    <p class="mb-1 text-muted"><small>Format Info:</small></p>
+                                    <p class="mb-0">Pages: N/A | ISBN: N/A</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Parameters Box (Now on Right) -->
+                    <div class="col-md-6">
+                        <div class="unified-card">
+                            <h5 class="info-card-title">Parameters</h5>
+                            <ul class="info-list">
+                                <li><span>Binding</span> <strong>N/A</strong></li>
+                                <li><span>Paper</span> <strong>N/A</strong></li>
+                                <li><span>Cover</span> <strong>N/A</strong></li>
+                                <li><span>Dimensions</span> <strong>N/A</strong></li>
+                                <li><span>Weight</span> <strong>N/A</strong></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons Area -->
+                <div class="action-area d-flex gap-3 align-items-center">
+                    @if (this.publication.IsAvailable)
+                    {
+                        <div class="badge-status status-available">
+                            Available
+                        </div>
+                        <button class="btn btn-reserve">
+                            RESERVE
+                        </button>
+                    }
+                    else
+                    {
+                         <div class="badge-status status-unavailable">
+                            Not Available
+                        </div>
+                        <button class="btn btn-reserve" disabled>
+                            RESERVE
+                        </button>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+</div>
 
 @code {
 

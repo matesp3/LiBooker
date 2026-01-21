@@ -16,7 +16,6 @@
     </div>
     
     <div class="filters-row align-items-center">
-        <!-- NOVÝ BADGE -->
         @if (!string.IsNullOrEmpty(this.SelectedType) && !string.IsNullOrEmpty(this.SelectedName))
         {
             <div class="me-3">
@@ -34,7 +33,6 @@
             </div>
         }
         
-        <!-- Existujúce selecty -->
         <div class="filter-group">
             <label class="filter-label">Availability</label>
             <select class="form-select custom-select" @bind="this.filterAvailability" @bind:after="OnFilterChanged">
@@ -86,16 +84,30 @@ else
         {
             var pub = this.publications[idx];
             <div class="col-md-4 col-sm-6">
-                <div class="card h-100">
+                <!-- Added onclick event here to the card -->
+                <div class="card h-100" @onclick="() => NavigateToDetails((idx+1))">
+                    
                     <div class="publication-image-container">
+                        @* Availability Badge *@
+                        @if (pub.IsAvailable)
+                        {
+                            <span class="availability-badge badge-available">Available</span>
+                        }
+                        else
+                        {
+                            <span class="availability-badge badge-unavailable">Unavailable</span>
+                        }
+
                         @{
                             var imageUrl = GetImageDataUrl(pub?.Image);
                         }
+                        
+                        @* Image loading logic ... *@
                         @if (!string.IsNullOrEmpty(imageUrl))
                         {
                             <img src="@imageUrl" class="publication-image" alt="@(pub?.Title ?? "Unknown title")" />
                         }
-                        else if (this.isLoadingImages && idx >= this.imagesLoaded) // idx < (imgsLoaded) and imageUrl is empty => img does not exist
+                        else if (this.isLoadingImages && idx >= this.imagesLoaded)
                         {
                             <div class="publication-image-placeholder">
                                 <span>Loading...</span>
@@ -104,6 +116,7 @@ else
                         else
                         {
                             <div class="publication-image-placeholder">
+                                <!-- SVG Icon placeholder ... -->
                                 <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" fill="currentColor" viewBox="0 0 16 16">
                                     <path d="M4.502 9a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z"/>
                                     <path d="M14.002 13a2 2 0 0 1-2 2h-10a2 2 0 0 1-2-2V5A2 2 0 0 1 2 3a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v8a2 2 0 0 1-1.998 2zM14 2H4a1 1 0 0 0-1 1h9.002a2 2 0 0 1 2 2v7A1 1 0 0 0 15 11V3a1 1 0 0 0-1-1zM2.002 4a1 1 0 0 0-1 1v8l2.646-2.354a.5.5 0 0 1 .63-.062l2.66 1.773 3.71-3.71a.5.5 0 0 1 .577-.094l1.777 1.947V5a1 1 0 0 0-1-1h-10z"/>
@@ -112,6 +125,7 @@ else
                             </div>
                         }
                     </div>
+
                     <div class="card-body d-flex flex-column">
                         <h5 class="card-title">@(pub?.Title ?? "Unknown title")</h5>
                         <p class="card-text flex-grow-1">
