@@ -17,8 +17,4 @@
     <ProjectReference Include="..\LiBookerShared\LiBookerShared.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Components\" />
-  </ItemGroup>
-
 </Project>

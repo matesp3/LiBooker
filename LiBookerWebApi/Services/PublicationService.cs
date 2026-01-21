@@ -11,7 +11,7 @@ namespace LiBookerWebApi.Services
     {
         private readonly LiBookerDbContext _db = db;
 
-        public async Task<PublicationMainInfo?> GetByIdAsync(int publicationId, CancellationToken ct = default)
+        public async Task<PublicationMainInfo?> GetPublicationByIdAsync(int publicationId, CancellationToken ct = default)
         {
             var p = await _db.Publications
                 .AsNoTracking()
@@ -66,9 +66,10 @@ namespace LiBookerWebApi.Services
             return await _db.Publications.CountAsync(ct);
         }
 
-        public async Task<List<PublicationMainInfo>> GetAllAsync(
-            int pageNumber = 1,
-            int pageSize = 50,
+        public async Task<List<PublicationMainInfo>> GetPublicationsAsync(
+            int pageNumber,
+            int pageSize,
+            int? bookId, int? authorId, int? genreId,
             PublicationAvailability availability = PublicationAvailability.All,
             PublicationsSorting sorting = PublicationsSorting.None,
             bool durLoggingEnabled = false,
@@ -77,7 +78,7 @@ namespace LiBookerWebApi.Services
             List<PublicationMainInfo>? result = null;
             Stopwatch? swTotal = durLoggingEnabled ? Stopwatch.StartNew() : null;
 
-            result = await GetAvailableAsync(pageNumber, pageSize, availability, sorting, durLoggingEnabled, ct);
+            result = await GetFilteredPublicationsAsync(pageNumber, pageSize, bookId, authorId, genreId, availability, sorting, durLoggingEnabled, ct);
 
             EndLoggingIfNeeed();
             return result ?? [];
@@ -91,69 +92,10 @@ namespace LiBookerWebApi.Services
             }
         }
 
-        //public async Task<List<PublicationMainInfo>> GetAvailableAsync(
-        //    int pageNumber = 1,
-        //    int pageSize = 50,
-        //    bool durLoggingEnabled = false,
-        //    CancellationToken ct = default)
-        //{
-        //    var today = DateTime.Today;  // TRUNC(SYSDATE)
-
-        //    // IDs of available publications
-        //    var publicationIds = await _db.Publications
-        //        .AsNoTracking()
-        //        .Where(p => p.Copies != null && p.Copies
-        //            .Any(v =>  // has any copy. Publication is available if at least one of its copies is available
-        //                v.Loans == null || !v.Loans.Any(vp => // has no loans OR has loans but none are active
-        //                vp.ReturnedAt == null || vp.ReturnedAt > today) // not returned yet OR returned in the future
-        //        ))
-        //        .OrderBy(p => p.Id)
-        //        .Skip((pageNumber - 1) * pageSize)
-        //        .Take(pageSize)
-        //        .Select(p => p.Id)
-        //        .ToListAsync(ct);
-
-        //    if (publicationIds.Count == 0)
-        //        return [];
-
-        //    // Retrieve raw data from the database
-        //    var rawData = await _db.Publications
-        //        .AsNoTracking()
-        //        .Where(p => publicationIds.Contains(p.Id))
-        //        .Select(p => new
-        //        {
-        //            p.Id,
-        //            Title = p.Book.Title,
-        //            Authors = p.Book.BookAuthors
-        //                .Select(ba => ba.Author != null ? ba.Author.FirstName + " " + ba.Author.LastName : "Unknown")
-        //                .ToList(),
-        //            Publication = p.Publisher.Name,
-        //            p.Year,
-        //            p.CoverImageId
-        //        })
-        //        .ToListAsync(ct);
-
-        //    var result = rawData.Select(p => new PublicationMainInfo
-        //    {
-        //        Title = p.Title ?? "Unknown",
-        //        Author = p.Authors != null && p.Authors.Count != 0
-        //            ? string.Join(", ", p.Authors
-        //                .Select(a => a.Trim())
-        //                .Where(a => !string.IsNullOrWhiteSpace(a))
-        //                .Distinct())
-        //            : "Unknown",
-        //        Publication = p.Publication ?? "Unknown",
-        //        Year = p.Year,
-        //        ImageId = p.CoverImageId,
-        //        Image = []
-        //    }).ToList();
-
-        //    return result;
-        //}
-
-        public async Task<List<PublicationMainInfo>> GetAvailableAsync(
-            int pageNumber = 1,
-            int pageSize = 50,
+        public async Task<List<PublicationMainInfo>> GetFilteredPublicationsAsync(
+            int pageNumber,
+            int pageSize,
+            int? bookId, int? authorId, int? genreId,
             PublicationAvailability availability = PublicationAvailability.All,
             PublicationsSorting sorting = PublicationsSorting.None,
             bool durLoggingEnabled = false,
@@ -165,7 +107,7 @@ namespace LiBookerWebApi.Services
             var query = _db.Publications
                 .AsNoTracking()
                 .AsQueryable();
-            query = BuildParametrizedQuery(availability, sorting, today, query);
+            query = BuildParametrizedQuery(availability, sorting, bookId, authorId, genreId, today, query);
 
             var rawData = await query
                 .Skip((pageNumber - 1) * pageSize)
@@ -209,10 +151,12 @@ namespace LiBookerWebApi.Services
 
         private static IQueryable<Models.Entities.Publication> BuildParametrizedQuery(
             PublicationAvailability availability, 
-            PublicationsSorting sorting, 
+            PublicationsSorting sorting,
+            int? bookId, int? authorId, int? genreId,
             DateTime today, 
             IQueryable<Models.Entities.Publication> query)
         {
+            // 1. Availability filter
             query = availability switch
             {
             PublicationAvailability.AvailableOnly => query.Where(p => p.Copies != null && p.Copies.Any(v => // Publication is available if at least one of its copies is available
@@ -221,6 +165,17 @@ namespace LiBookerWebApi.Services
                 _ => query
             };
 
+            // 2. Chaining additional filters
+            if (bookId.HasValue)
+                query = query.Where(p => p.BookId == bookId);
+
+            if (authorId.HasValue)
+                query = query.Where(p => p.Book.BookAuthors!.Any(ba => ba.AuthorId == authorId));
+
+            if (genreId.HasValue)
+               query = query.Where(p => p.Book.BookGenres!.Any(bg => bg.GenreId == genreId));
+
+            // 3. Sorting
             query = sorting switch
             {
                 PublicationsSorting.ByTitleAsc => query.OrderBy(p => p.Book.Title),

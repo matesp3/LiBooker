@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
 
-namespace LiBookerWasmApp.Layout
+namespace LiBookerWasmApp.Components
 {
     public partial class GlobalSearch : IDisposable
     {
@@ -30,7 +30,7 @@ namespace LiBookerWasmApp.Layout
             get => this.searchTerm;
             set
             {
-                searchTerm = value;
+                this.searchTerm = value;
                 OnSearchInput(); // Trigger debounce on every keystroke
             }
         }
@@ -41,7 +41,7 @@ namespace LiBookerWasmApp.Layout
             this.debounceTimer?.Stop();
             this.debounceTimer?.Dispose();
 
-            if (string.IsNullOrWhiteSpace(this.searchTerm))
+            if (string.IsNullOrWhiteSpace(searchTerm))
             {
                 this.searchResults.Clear();
                 this.showSearchResults = false;
@@ -74,7 +74,7 @@ namespace LiBookerWasmApp.Layout
 
             try
             {
-                var result = await PublicationClient.GetAllSearchMatchesAsync(searchTerm, token);
+                var result = await this.PublicationClient.GetAllSearchMatchesAsync(searchTerm, token);
 
                 if (!token.IsCancellationRequested && result.IsSuccess)
                 {
@@ -101,32 +101,29 @@ namespace LiBookerWasmApp.Layout
         private void SelectSearchResultItem(FoundMatch match)
         {
             this.showSearchResults = false;
-            this.SearchTerm = string.Empty; // Optionally clear search after navigation
+            this.SearchTerm = string.Empty; 
             
             if (match is BookMatch book)
             {
-                // Navigate to book details
-                // NavigationManager.NavigateTo($"/publication/{book.Id}");
-                Console.WriteLine($"Navigate to book: {book.Title} ({book.Id})");
+                var encodedName = Uri.EscapeDataString(book.Title);
+                this.NavigationManager.NavigateTo($"/publications?selectedType=book&selectedId={book.Id}&selectedName={encodedName}");
             }
             else if (match is AuthorMatch author)
             {
-                // Navigate to publications filtered by author (logic to be implemented on Publications page)
-                 Console.WriteLine($"Filter by author: {author.FullName}");
-                 // For now, we can just navigate to publications, you might want to add query strings later
-                 this.NavigationManager.NavigateTo("publications"); 
+                var encodedName = Uri.EscapeDataString(author.FullName);
+                this.NavigationManager.NavigateTo($"/publications?selectedType=author&selectedId={author.Id}&selectedName={encodedName}");
             }
             else if (match is GenreMatch genre)
             {
-                 Console.WriteLine($"Filter by genre: {genre.Name}");
-                 this.NavigationManager.NavigateTo("publications");
+                var encodedName = Uri.EscapeDataString(genre.Name);
+                this.NavigationManager.NavigateTo($"/publications?selectedType=genre&selectedId={genre.Id}&selectedName={encodedName}");
             }
         }
 
         // Helper for highlighting text
         private MarkupString HighlightText(string text)
         {
-            if (string.IsNullOrEmpty(SearchTerm) || string.IsNullOrEmpty(text))
+            if (string.IsNullOrEmpty(this.SearchTerm) || string.IsNullOrEmpty(text))
                 return new MarkupString(text);
 
             var pattern = System.Text.RegularExpressions.Regex.Escape(this.SearchTerm);

@@ -8,7 +8,7 @@ namespace LiBookerWebApi.Endpoints
     {
 
         private const int MaxPagePublications = 15;
-        private const int MaxPublicationIds = 10;
+        private const int MaxPublicationImgs = 10;
 
         /// <summary>
         /// Maps the publication-related API endpoints to the provided WebApplication.
@@ -38,7 +38,7 @@ namespace LiBookerWebApi.Endpoints
                     if (durLoggingEnabled)
                         swOverall = Stopwatch.StartNew();
 
-                    var dto = await svc.GetByIdAsync(id, ct);
+                    var dto = await svc.GetPublicationByIdAsync(id, ct);
 
                     if (durLoggingEnabled)
                     {
@@ -64,8 +64,12 @@ namespace LiBookerWebApi.Endpoints
                 Services.IPublicationService svc,
                 int pageNumber = 1,
                 int pageSize = MaxPagePublications,
+                // (optional query params)
                 string? availability = null,
                 string? sort = null,
+                int? bookId = null,
+                int? authorId = null,
+                int? genreId = null,
                 CancellationToken ct = default) =>
             {
                 try
@@ -80,16 +84,29 @@ namespace LiBookerWebApi.Endpoints
                         pageSize = MaxPagePublications;
                     if (pageSize > MaxPagePublications)
                         pageSize = MaxPagePublications; // max page size to prevent abuse
+                    if (IsNotIdParamOk(ref bookId))
+                        return Results.BadRequest("Invalid bookId parameter.");
+                    if (IsNotIdParamOk(ref authorId))
+                        return Results.BadRequest("Invalid authorId parameter.");
+                    if (IsNotIdParamOk(ref genreId))
+                        return Results.BadRequest("Invalid genreId parameter.");
 
                     var av = ParseAvailabilityParam(availability);
                     var sortOption = ParseSortParam(sort);
 
-                    var list = await svc.GetAllAsync(pageNumber, pageSize, av, sortOption, durLoggingEnabled, ct);
+                    var list = await svc.GetPublicationsAsync(pageNumber, pageSize, bookId, authorId, genreId, av, sortOption, durLoggingEnabled, ct);
 
                     if (durLoggingEnabled)
                     {
                         swOverall?.Stop();
-                        Console.WriteLine($"[PublicationEndpoint] GET /api/publications page {pageNumber} size {pageSize} took {swOverall?.ElapsedMilliseconds} ms");
+                        string s = String.Empty;
+                        if (bookId.HasValue)
+                            s += $" bookId={bookId.Value}";
+                        if (authorId.HasValue)
+                            s += $" authorId={authorId.Value}";
+                        if (genreId.HasValue)
+                            s += $" genreId={genreId.Value}";
+                        Console.WriteLine($"[PublicationEndpoint] GET /api/publications page {pageNumber} size {pageSize} |s={s} took {swOverall?.ElapsedMilliseconds} ms");
                     }
                     return Results.Ok(list);
                 }
@@ -99,6 +116,16 @@ namespace LiBookerWebApi.Endpoints
                     return Results.StatusCode(499); // non-standard: client closed request
                 }
             }).WithName("GetPublicationPerPage");
+        }
+
+        private static bool IsNotIdParamOk(ref int? id)
+        {
+            if (id is not null && id < 0)
+            {
+                id = null;
+                return true;
+            }
+            return false;
         }
 
         /// <summary>
@@ -117,8 +144,8 @@ namespace LiBookerWebApi.Endpoints
                 {
                     if (ids == null || ids.Length == 0)
                         return Results.BadRequest("No publication image ids provided. At least one must be provided.");
-                    if (ids.Length > MaxPublicationIds)
-                        return Results.BadRequest($"Too many publication image ids provided. Maximum is {MaxPublicationIds}.");
+                    if (ids.Length > MaxPublicationImgs)
+                        return Results.BadRequest($"Too many publication image ids provided. Maximum is {MaxPublicationImgs}.");
 
                     Stopwatch? swOverall = null;
                     if (durLoggingEnabled)

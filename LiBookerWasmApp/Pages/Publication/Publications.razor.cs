@@ -10,15 +10,33 @@ namespace LiBookerWasmApp.Pages.Publication
         [Inject]
         public required PublicationClient PublicationClient { get; set; }
 
+        [Inject]
+        public required NavigationManager NavigationManager { get; set; }
+
         /// <summary>Load 3 imageData at a time</summary>
         private const int ImageBatchSize = 3;
         private const int pageSize = 15;
+
+        // automatic linking of query parameter from URL ?selectedId=id
+        [SupplyParameterFromQuery]
+        public int? SelectedId { get; set; }
+
+        // automatic linking of query parameter from URL ?selectedType={"author"/"book"/"genre"}
+        [SupplyParameterFromQuery]
+        public string? SelectedType { get; set; }
+
+        // automatic linking of query parameter from URL ?selectedName=BookTitle/AuthorName/GenreName
+        [SupplyParameterFromQuery]
+        public string? SelectedName { get; set; }
 
         private bool isLoading;
         private bool isLoadingImages;
         private int currentPage = 1;
         private int imagesLoaded;
         private int totalPublications = -1;
+        private int? bookId;
+        private int? authorId;
+        private int? genreId;
         private string? error = null;
         private string filterAvailability = "all"; // filter availability state
         private string filterSort = "none"; // filter sorting state
@@ -29,9 +47,26 @@ namespace LiBookerWasmApp.Pages.Publication
         /// <summary>Max publications per page</summary>
         public static int PageSize => pageSize;
 
-        protected override async Task OnInitializedAsync()
+        // here we respond to query parameter changes
+        protected override async Task OnParametersSetAsync()
         {
-            await LoadPublications();
+            // filters reset before application of query parameters
+            this.bookId = null;
+            this.authorId = null;
+            this.genreId = null;
+            
+            if (!string.IsNullOrEmpty(this.SelectedType) && this.SelectedId.HasValue)
+            {
+                var type = this.SelectedType.ToLower();
+                if (type == "book")
+                    this.bookId = this.SelectedId.Value;
+                else if (type == "author")
+                    this.authorId = this.SelectedId.Value;
+                else if (type == "genre")
+                    this.genreId = this.SelectedId.Value;
+            }
+
+            await LoadPublications(); // always load publications on parameter set
         }
 
         private async Task OnFilterChanged()
@@ -60,11 +95,12 @@ namespace LiBookerWasmApp.Pages.Publication
             try 
             {
                 // ---------------- new request ----------------
-                if (this.totalPublications < 0) // only load count if not loaded yet
-                    _ = LoadPublicationsCountAsync(currentToken); // fire and forget count load
+                //if (this.totalPublication) // only load count if not loaded yet
+                _ = LoadPublicationsCountAsync(currentToken); // fire and forget count load
 
                 // load publications WITHOUT imageData (fast - for better UX)
                 var result = await PublicationClient.GetPublicationsAsync(this.currentPage, PageSize,
+                        this.bookId, this.authorId, this.genreId,
                         PublicationParams.ParseAvailabilityParam(this.filterAvailability),
                         PublicationParams.ParseSortParam(this.filterSort),
                         currentToken);
@@ -220,6 +256,12 @@ namespace LiBookerWasmApp.Pages.Publication
 
             var base64 = Convert.ToBase64String(imageData);
             return $"data:image/jpeg;base64,{base64}";
+        }
+
+        // removes filter create by query parameters
+        private void ClearActiveFilter()
+        {
+            this.NavigationManager.NavigateTo("/publications");
         }
     }
 }

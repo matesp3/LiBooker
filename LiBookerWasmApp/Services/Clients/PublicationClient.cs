@@ -17,13 +17,17 @@ namespace LiBookerWasmApp.Services.Clients
         /// <param name="pageSize"></param>
         /// <param name="ct"></param>
         /// <returns></returns>
-        public async Task<ApiResponse<List<PublicationMainInfo>?>> GetPublicationsAsync(int pageNumber = 1, int pageSize = 15, 
+        public async Task<ApiResponse<List<PublicationMainInfo>?>> GetPublicationsAsync(int pageNumber, int pageSize,
+            int? bookId, int? authorId, int? genreId,
             PublicationAvailability availability = PublicationAvailability.All, 
             PublicationsSorting sorting = PublicationsSorting.None, 
             CancellationToken ct = default)
         {
             var requestUrl = $"api/publications?" +
                     $"pageNumber={pageNumber}&pageSize={pageSize}&" +
+                    $"{(bookId.HasValue ? $"bookId={bookId.Value}&" : string.Empty)}" +
+                    $"{(authorId.HasValue ? $"authorId={authorId.Value}&" : string.Empty)}" +
+                    $"{(genreId.HasValue ? $"genreId={genreId.Value}&" : string.Empty)}" +
                     $"availability={GetAvailabilityText(availability)}&sort={GetSortingText(sorting)}";
             return await ApiClient<List<PublicationMainInfo>?>.GetJsonResponseAsync(requestUrl, _http, ct);
         }
