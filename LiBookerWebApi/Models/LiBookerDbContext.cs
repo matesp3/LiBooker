@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using LiBookerWebApi.Models;
 using LiBookerWebApi.Models.Entities;
+using LiBookerWebApi.Models.Entities.VasProjekt.Models;
 
 namespace LiBookerWebApi.Model
 {
@@ -27,6 +28,7 @@ namespace LiBookerWebApi.Model
         public DbSet<Reservation> Reservations => Set<Reservation>();
         public DbSet<Loan> Loans => Set<Loan>();
         public DbSet<Fine> Fines => Set<Fine>();
+        public DbSet<PublicationDetails> PublicationDetails => Set<PublicationDetails>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -225,6 +227,13 @@ namespace LiBookerWebApi.Model
                 b.Property(x => x.Id).HasColumnName("id_pokuty".ToUpper());
                 b.Property(x => x.PaidAt).HasColumnName("dat_zaplatenia".ToUpper());
                 b.Property(x => x.Amount).HasColumnName("cena".ToUpper()).HasColumnType("NUMBER");
+            });
+
+            // view 'PUBLICATION_DETAILS'
+            modelBuilder.Entity<PublicationDetails>(b =>
+            {
+                b.HasNoKey();
+                b.ToView("PUBLICATION_DETAILS".ToUpper());
             });
         }
     }

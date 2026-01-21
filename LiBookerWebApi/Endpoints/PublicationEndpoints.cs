@@ -20,8 +20,33 @@ namespace LiBookerWebApi.Endpoints
             RouteGroupBuilder group = app.MapGroup("/api/publications");
             MapGetPublicationsPerPageEndpoint(group, durLoggingEnabled);    // GET /api/publications?pageNumber=x&pageSize=y&availability=all&sort=none
             MapGetPublicationByIdEndpoint(group, durLoggingEnabled);        // GET /api/publications/{id}
+            MapGetPublicationDetailsByIdEndpoint(group, durLoggingEnabled); // GET /api/publications/details/{id}
             MapGetPublicationImagesByIdsEndpoint(group, durLoggingEnabled); // GET /api/publications/image_ids?ids=1&ids=2&ids=3
             MapGetPublicationsCountEndpoint(group, durLoggingEnabled);      // GET /api/publications/count
+        }
+
+        private static void MapGetPublicationDetailsByIdEndpoint(RouteGroupBuilder group, bool durLoggingEnabled)
+        {
+            group.MapGet("/details/{id:int}", async (Services.IPublicationService svc, int id, CancellationToken ct) =>
+            {
+                try
+                {
+                    Stopwatch? swOverall = null;
+                    if (durLoggingEnabled)
+                        swOverall = Stopwatch.StartNew();
+                    var dto = await svc.GetPublicationDetailsByIdAsync(id, ct).ConfigureAwait(false);
+                    if (durLoggingEnabled)
+                    {
+                        swOverall?.Stop();
+                        Console.WriteLine($"[PublicationEndpoint] GET /api/publications/details/{id} took {swOverall?.ElapsedMilliseconds} ms");
+                    }
+                    return dto is null ? Results.NotFound() : Results.Ok(dto);
+                }
+                catch (OperationCanceledException)
+                {
+                    return Results.StatusCode(499);
+                }
+            }).WithName("GetPublicationDetailsById");
         }
 
         /// <summary>
@@ -115,7 +140,7 @@ namespace LiBookerWebApi.Endpoints
                     // Client cancelled the request (tab closed / request aborted).
                     return Results.StatusCode(499); // non-standard: client closed request
                 }
-            }).WithName("GetPublicationPerPage");
+            }).WithName("GetPublicationsPerPage");
         }
 
         /// <summary>

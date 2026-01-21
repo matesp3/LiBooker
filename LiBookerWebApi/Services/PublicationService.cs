@@ -1,4 +1,5 @@
 using LiBooker.Shared.DTOs;
+using LiBooker.Shared.DTOs.VasProjekt.Shared.Dtos;
 using LiBookerWebApi.Model;
 using Microsoft.EntityFrameworkCore;
 using System.Diagnostics;
@@ -162,6 +163,38 @@ namespace LiBookerWebApi.Services
                 Console.WriteLine($"[PublicationService] Single query took {swTotal?.ElapsedMilliseconds} ms, Records: {result.Count}");
 
             return result;
+        }
+
+        public async Task<PublicationDetails?> GetPublicationDetailsByIdAsync(int id, CancellationToken ct)
+        {
+            var res = await _db.PublicationDetails
+                .AsNoTracking()
+                .FirstOrDefaultAsync(pd => pd.PublicationId == id, ct);
+            if (res == null) 
+                return null;
+            return new PublicationDetails
+            {
+                PublicationId = res.PublicationId,
+                BookId = res.BookId,
+                BookTitle = res.BookTitle,
+                PublisherId = res.PublisherId,
+                PublisherName = res.PublisherName,
+                LanguageId = res.LanguageId,
+                LanguageName = res.LanguageName,
+                AuthorIds = res.AuthorIds,
+                AuthorFullNames = res.GetAuthorNamesWithoutIds(),
+                GenreIds = res.GenreIds,
+                GenreNames = res.GetGenreNamesWithoutIds(),
+                PictureId = res.PictureId,
+                Isbn = res.Isbn,
+                PublicationYear = res.PublicationYear,
+                PageCount = res.PageCount,
+                Binding = res.Binding,
+                Paper = res.Paper,
+                Cover = res.Cover,
+                Dimensions = res.Dimensions,
+                Weight = res.Weight
+            };
         }
 
         private static IQueryable<Models.Entities.Publication> BuildParametrizedQuery(

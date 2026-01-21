@@ -1,4 +1,5 @@
 using LiBooker.Shared.DTOs;
+using LiBooker.Shared.DTOs.VasProjekt.Shared.Dtos;
 using static LiBooker.Shared.EndpointParams.PublicationParams;
 
 namespace LiBookerWebApi.Services
@@ -17,5 +18,6 @@ namespace LiBookerWebApi.Services
         // Returns images mapped by image ID: Dictionary<imageId, imageBytes>
         Task<List<PublicationImage>> GetPublicationImagesByIdsAsync(int[] ids, CancellationToken ct);
         Task<int> GetPublicationsCountAsync(int? bookId, int? authorId, int? genreId, bool onlyAvailable, CancellationToken ct);
+        Task<PublicationDetails?> GetPublicationDetailsByIdAsync(int id, CancellationToken ct);
     }
 }
