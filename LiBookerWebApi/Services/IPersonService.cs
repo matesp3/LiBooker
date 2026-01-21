@@ -1,4 +1,5 @@
 using LiBooker.Shared.DTOs;
+using LiBookerShared.ApiResponses;
 
 namespace LiBookerWebApi.Services
 {
@@ -6,6 +7,10 @@ namespace LiBookerWebApi.Services
     {
         Task<List<Person>> GetAllAsync(CancellationToken ct = default);
         Task<Person?> GetByIdAsync(int id, CancellationToken ct = default);
-        // add Create/Update/Delete signatures here
+        Task<UpdateResponse<PersonUpdate>> UpdateAsync(
+            int id, 
+            PersonUpdate dto, 
+            Microsoft.AspNetCore.Identity.UserManager<Models.ApplicationUser> userManager, 
+            CancellationToken ct);
     }
 }

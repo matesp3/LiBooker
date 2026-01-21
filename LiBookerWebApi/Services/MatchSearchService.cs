@@ -2,7 +2,6 @@
 using LiBookerWebApi.Model;
 using LinqKit; // For PredicateBuilder [OR] and .Expand()
 using Microsoft.EntityFrameworkCore;
-using System.Threading.Tasks;
 
 namespace LiBookerWebApi.Services
 {

@@ -38,7 +38,7 @@ namespace LiBookerWebApi.Endpoints
                     if (durLoggingEnabled)
                         swOverall = Stopwatch.StartNew();
 
-                    var dto = await svc.GetPublicationByIdAsync(id, ct);
+                    var dto = await svc.GetPublicationByIdAsync(id, ct).ConfigureAwait(false);
 
                     if (durLoggingEnabled)
                     {
@@ -84,17 +84,17 @@ namespace LiBookerWebApi.Endpoints
                         pageSize = MaxPagePublications;
                     if (pageSize > MaxPagePublications)
                         pageSize = MaxPagePublications; // max page size to prevent abuse
-                    if (IsNotIdParamOk(ref bookId))
+                    if (ParamChecker.IsNotIdParamOk(ref bookId))
                         return Results.BadRequest("Invalid bookId parameter.");
-                    if (IsNotIdParamOk(ref authorId))
+                    if (ParamChecker.IsNotIdParamOk(ref authorId))
                         return Results.BadRequest("Invalid authorId parameter.");
-                    if (IsNotIdParamOk(ref genreId))
+                    if (ParamChecker.IsNotIdParamOk(ref genreId))
                         return Results.BadRequest("Invalid genreId parameter.");
 
                     var av = ParseAvailabilityParam(availability);
                     var sortOption = ParseSortParam(sort);
 
-                    var list = await svc.GetPublicationsAsync(pageNumber, pageSize, bookId, authorId, genreId, av, sortOption, durLoggingEnabled, ct);
+                    var list = await svc.GetPublicationsAsync(pageNumber, pageSize, bookId, authorId, genreId, av, sortOption, durLoggingEnabled, ct).ConfigureAwait(false);
 
                     if (durLoggingEnabled)
                     {
@@ -116,16 +116,6 @@ namespace LiBookerWebApi.Endpoints
                     return Results.StatusCode(499); // non-standard: client closed request
                 }
             }).WithName("GetPublicationPerPage");
-        }
-
-        private static bool IsNotIdParamOk(ref int? id)
-        {
-            if (id is not null && id < 0)
-            {
-                id = null;
-                return true;
-            }
-            return false;
         }
 
         /// <summary>
@@ -151,7 +141,7 @@ namespace LiBookerWebApi.Endpoints
                     if (durLoggingEnabled)
                         swOverall = Stopwatch.StartNew();
 
-                    var images = await svc.GetPublicationImagesByIdsAsync(ids, ct);
+                    var images = await svc.GetPublicationImagesByIdsAsync(ids, ct).ConfigureAwait(false);
 
                     if (durLoggingEnabled)
                     {
@@ -182,14 +172,14 @@ namespace LiBookerWebApi.Endpoints
                     Stopwatch? swOverall = null;
                     if (durLoggingEnabled)
                         swOverall = Stopwatch.StartNew();
-                    if(IsNotIdParamOk(ref bookId))
+                    if(ParamChecker.IsNotIdParamOk(ref bookId))
                         return Results.BadRequest("Invalid bookId parameter.");
-                    if (IsNotIdParamOk(ref authorId))
+                    if (ParamChecker.IsNotIdParamOk(ref authorId))
                         return Results.BadRequest("Invalid authorId parameter.");
-                    if (IsNotIdParamOk(ref genreId))
+                    if (ParamChecker.IsNotIdParamOk(ref genreId))
                         return Results.BadRequest("Invalid genreId parameter.");
 
-                    var count = await svc.GetPublicationsCountAsync(bookId, authorId, genreId, onlyAvailable, ct);
+                    var count = await svc.GetPublicationsCountAsync(bookId, authorId, genreId, onlyAvailable, ct).ConfigureAwait(false);
 
                     if (durLoggingEnabled)
                     {

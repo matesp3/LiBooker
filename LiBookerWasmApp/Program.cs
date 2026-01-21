@@ -19,7 +19,7 @@ namespace LiBookerWasmApp
             // 0. registering own handler
             builder.Services.AddTransient<CustomAuthorizationMessageHandler>();
 
-            // 1. registration of our own storage service
+            // 1. registration of our own _storage service
             builder.Services.AddScoped<IBrowserStorage, BrowserStorage>();
 
             // 2. Auth Core

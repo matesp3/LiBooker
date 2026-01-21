@@ -9,7 +9,7 @@ namespace LiBookerWasmApp.Services.Auth
 
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            // get token from local storage in browser
+            // get token from local _storage in browser
             var rawToken = await storage.GetItemAsync(AuthTokenKey);
 
             if (!string.IsNullOrWhiteSpace(rawToken))

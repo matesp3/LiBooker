@@ -11,13 +11,13 @@ namespace LiBookerWasmApp.Services.Auth
 {
     public class CustomAuthStateProvider(IHttpClientFactory httpClientFactory, IBrowserStorage storage) : AuthenticationStateProvider
     {
-        private readonly HttpClient httpClient = httpClientFactory.CreateClient("LiBookerApi"); 
-        private readonly IBrowserStorage storage = storage;
         private const string AuthTokenKey = "authToken";
+        private readonly HttpClient _httpClient = httpClientFactory.CreateClient("LiBookerApi"); 
+        private readonly IBrowserStorage _storage = storage;
 
         public override async Task<AuthenticationState> GetAuthenticationStateAsync()
         {
-            var rawToken = await storage.GetItemAsync(AuthTokenKey);
+            var rawToken = await _storage.GetItemAsync(AuthTokenKey);
 
             if (string.IsNullOrWhiteSpace(rawToken))
             {
@@ -27,7 +27,7 @@ namespace LiBookerWasmApp.Services.Auth
             var token = rawToken.Trim('"');
 
             //set token into header for all future requests
-            this.httpClient.DefaultRequestHeaders.Authorization = 
+            _httpClient.DefaultRequestHeaders.Authorization = 
                 new AuthenticationHeaderValue("Bearer", token);
 
             // find out whether it is JWT or OPAQUE token
@@ -61,7 +61,7 @@ namespace LiBookerWasmApp.Services.Auth
 
         public async Task<bool> LoginAsync(Login loginModel)
         {
-            var response = await this.httpClient.PostAsJsonAsync("/api/auth/login?useCookies=false", loginModel);
+            var response = await _httpClient.PostAsJsonAsync("/api/auth/login?useCookies=false", loginModel);
 
             var content = await response.Content.ReadAsStringAsync();
             //Console.WriteLine($"DEBUG LOGIN STATUS: {response.StatusCode}");
@@ -78,7 +78,7 @@ namespace LiBookerWasmApp.Services.Auth
                     if (!string.IsNullOrEmpty(result?.AccessToken))
                     {
                         //Console.WriteLine("DEBUG: AccessToken found. Saving...");
-                        await this.storage.SetItemAsync(AuthTokenKey, result.AccessToken); // save token
+                        await _storage.SetItemAsync(AuthTokenKey, result.AccessToken); // save token
 
                         NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
                         return true;
@@ -102,16 +102,16 @@ namespace LiBookerWasmApp.Services.Auth
 
         public async Task LogoutAsync()
         {
-            await storage.RemoveItemAsync(AuthTokenKey);
+            await _storage.RemoveItemAsync(AuthTokenKey);
             
-            this.httpClient.DefaultRequestHeaders.Authorization = null;
+            _httpClient.DefaultRequestHeaders.Authorization = null;
             NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
         }
 
         public async Task<SimpleResponse> RegisterAsync(PersonRegistration registerModel)
         {
             // explicitly defined endpoint due to Person Id
-            var response = await this.httpClient.PostAsJsonAsync("/api/auth/register-extended", registerModel);
+            var response = await _httpClient.PostAsJsonAsync("/api/auth/register-extended", registerModel);
             var content = await response.Content.ReadAsStringAsync();
             return new SimpleResponse
             { 
@@ -127,7 +127,7 @@ namespace LiBookerWasmApp.Services.Auth
             try
             {
                 // auth header is already set in client
-                var userInfo = await this.httpClient.GetFromJsonAsync<UserInfoResponse>("/api/auth/user-info");
+                var userInfo = await _httpClient.GetFromJsonAsync<UserInfoResponse>("/api/auth/user-info");
                 ParseClaims(claims, userInfo);
             }
             catch (Exception ex) // if request fails (e.g. expired token), its okay

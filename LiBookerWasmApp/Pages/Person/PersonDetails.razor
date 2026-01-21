@@ -24,6 +24,19 @@
     }
     else
     {
+        @if (!string.IsNullOrEmpty(this.Message))
+        {
+            <div class="mb-4 fade-in">
+                <span class="badge rounded-pill bg-success d-inline-flex align-items-center p-2 px-4 shadow">
+                    <span class="fw-bold me-2 fs-6">
+                        @this.Message
+                    </span>
+                    <button type="button" class="btn-close btn-close-white" style="width: 0.8em; height: 0.8em;"
+                            aria-label="Remove messsage" @onclick="RemoveMessage"></button>
+                </span>
+            </div>
+        }
+        
         <div class="profile-card">
             <div class="profile-header">
                 <!-- Edit Button with Text & Icon -->
@@ -101,32 +114,60 @@
 
 @code {
     private bool IsLoading = true;
+
+    [SupplyParameterFromQuery]
+    private bool UpdateOk { get; set; } = false;
+
+    private string? Message { get; set; } = null;
     private Person? person;
     private CancellationTokenSource? cts;
 
     protected override async Task OnInitializedAsync()
     {
         this.cts = new CancellationTokenSource();
-        
-        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
-        var user = authState.User;
 
-        if (user.Identity?.IsAuthenticated == true)
+        try
         {
-            var personIdClaim = user.FindFirst("PersonId");
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
 
-            if (personIdClaim != null && int.TryParse(personIdClaim.Value, out int personId))
+            if (user.Identity?.IsAuthenticated == true)
             {
-                var response = await PersonClient.GetPersonByIdAsync(personId, this.cts.Token);
-                if (response.IsSuccess)
+                var personIdClaim = user.FindFirst("PersonId");
+
+                if (personIdClaim != null && int.TryParse(personIdClaim.Value, out int personId))
                 {
-                    this.person = response.Data;
+                    var response = await this.PersonClient.GetPersonByIdAsync(personId, this.cts.Token);
+                    if (response.IsSuccess)
+                    {
+                        this.person = response.Data;
+                    }
                 }
             }
+
+            this.IsLoading = false;
+            StateHasChanged();
+        }
+        catch (OperationCanceledException)
+        {
+        }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (this.UpdateOk)
+        {
+            this.Message = "Profile updated successfully.";
+
+            // Clear the query parameter from the URL
+            var uri = Navigation.ToAbsoluteUri(Navigation.Uri);
+            var newUri = uri.GetLeftPart(UriPartial.Path); 
+
+            // navigation causes new launch with OnParametersSetAsync s UpdateOk = false
+            this.Navigation.NavigateTo(newUri, forceLoad: false);
         }
 
-        this.IsLoading = false;
-        StateHasChanged();
+        await Task.CompletedTask; // just because method is async
     }
 
     // Helper to extract initials for the avatar
@@ -149,7 +190,13 @@
     {
         await this.JSRuntime.InvokeVoidAsync("clipboardCopy.copyText", text);
     }
-    
+
+    private void RemoveMessage()
+    {
+        this.Message = null;
+        StateHasChanged();
+    }
+
     private void NavigateToEdit()
     {
         Navigation.NavigateTo("/person/details/edit");

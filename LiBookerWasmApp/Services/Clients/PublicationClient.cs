@@ -4,11 +4,9 @@ using static LiBooker.Shared.EndpointParams.PublicationParams;
 
 namespace LiBookerWasmApp.Services.Clients
 {
-    public class PublicationClient
+    public class PublicationClient(HttpClient http)
     {
-        private readonly HttpClient _http;
-
-        public PublicationClient(HttpClient http) => _http = http;
+        private readonly HttpClient _http = http;
 
         /// <summary>
         /// Retrieves a paginated list of publications with main info only (no images, becauses it costs vast amount of resources).
@@ -29,7 +27,7 @@ namespace LiBookerWasmApp.Services.Clients
                     $"{(authorId.HasValue ? $"authorId={authorId.Value}&" : string.Empty)}" +
                     $"{(genreId.HasValue ? $"genreId={genreId.Value}&" : string.Empty)}" +
                     $"availability={GetAvailabilityText(availability)}&sort={GetSortingText(sorting)}";
-            return await ApiClient<List<PublicationMainInfo>?>.GetJsonResponseAsync(requestUrl, _http, ct);
+            return await ApiClient<List<PublicationMainInfo>?>.GetJsonAsync(requestUrl, _http, ct);
         }
 
         /// <summary>
@@ -41,7 +39,7 @@ namespace LiBookerWasmApp.Services.Clients
         public async Task<ApiResponse<PublicationMainInfo?>> GetByIdAsync(int id, CancellationToken ct = default)
         {
             var requestUrl = $"api/publications/{id}";
-            return await ApiClient<PublicationMainInfo?>.GetJsonResponseAsync(requestUrl, _http, ct);
+            return await ApiClient<PublicationMainInfo?>.GetJsonAsync(requestUrl, _http, ct);
         }
 
         /// <summary>
@@ -54,7 +52,7 @@ namespace LiBookerWasmApp.Services.Clients
         {
 
             var requestUrl = $"api/publications/image_ids?{string.Join("&", imageIds.Select(id => $"ids={id}"))}";
-            return await ApiClient<List<PublicationImage>>.GetJsonResponseAsync(requestUrl, _http, ct);
+            return await ApiClient<List<PublicationImage>>.GetJsonAsync(requestUrl, _http, ct);
         }
 
         /// <summary>
@@ -70,7 +68,7 @@ namespace LiBookerWasmApp.Services.Clients
                 $"{(authorId.HasValue ? $"authorId={authorId.Value}&" : string.Empty)}" +
                 $"{(genreId.HasValue ? $"genreId={genreId.Value}&" : string.Empty)}" +
                 $"onlyAvailable={(availability == PublicationAvailability.AvailableOnly)}";
-            return await ApiClient<int>.GetJsonResponseAsync(requestUrl, _http, ct);
+            return await ApiClient<int>.GetJsonAsync(requestUrl, _http, ct);
         }
 
         /// <summary>
@@ -82,7 +80,7 @@ namespace LiBookerWasmApp.Services.Clients
         public async Task<ApiResponse<List<FoundMatch>>> GetAllSearchMatchesAsync(string queryString, CancellationToken ct = default)
         {
             string requestUrl = $"api/matchsearch?query={Uri.EscapeDataString(queryString)}";
-            return await ApiClient<List<FoundMatch>>.GetJsonResponseAsync(requestUrl, _http, ct);
+            return await ApiClient<List<FoundMatch>>.GetJsonAsync(requestUrl, _http, ct);
         }
     }
 }

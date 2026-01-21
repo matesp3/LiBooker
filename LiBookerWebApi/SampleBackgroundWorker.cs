@@ -7,7 +7,7 @@ namespace LiBookerWebApi.Services
     {
         private readonly IDbContextFactory<LiBookerDbContext> _dbFactory;
 
-        public SampleBackgroundWorker(IDbContextFactory<LiBookerDbContext> dbFactory) => this._dbFactory = dbFactory;
+        public SampleBackgroundWorker(IDbContextFactory<LiBookerDbContext> dbFactory) => _dbFactory = dbFactory;
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
@@ -25,7 +25,7 @@ namespace LiBookerWebApi.Services
     {
         private readonly IDbContextFactory<LiBookerDbContext> _dbFactory;
 
-        public ParallelProcessor(IDbContextFactory<LiBookerDbContext> dbFactory) => this._dbFactory = dbFactory;
+        public ParallelProcessor(IDbContextFactory<LiBookerDbContext> dbFactory) => _dbFactory = dbFactory;
 
         public void ProcessInParallel(IEnumerable<int> ids)
         {

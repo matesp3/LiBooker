@@ -10,12 +10,12 @@ namespace LiBookerWebApi.Services
 {
     public class AuthService(LiBookerDbContext db) : IAuthService
     {
-        private readonly LiBookerDbContext db = db;
+        private readonly LiBookerDbContext _db = db;
 
         public async Task<RegistrationResult> RegisterUserAsync(UserManager<ApplicationUser> userManager, PersonRegistration dto, CancellationToken ct)
         {
             // Transaction launched on the DbContext level - to ensure both Person and ApplicationUser creations are atomic
-            using var transaction = await this.db.Database.BeginTransactionAsync(ct);
+            using var transaction = await _db.Database.BeginTransactionAsync(ct);
             try
             {
                 var emailTaken = await IsEmailTakenAsync(userManager, dto.Email.ToLower(), ct);
@@ -24,9 +24,9 @@ namespace LiBookerWebApi.Services
 
                 // step 1 - creating person (table 'osoba')
                 var person = CreatePersonFromDto(dto);
-                await this.db.Persons.AddAsync(person, ct);
+                await _db.Persons.AddAsync(person, ct);
                 // we need to save changes in order to obtain personId (ID is generated in DB), 
-                await this.db.SaveChangesAsync(ct); // not committed yet
+                await _db.SaveChangesAsync(ct); // not committed yet
                 // step 2 - creating Identity User
                 var newUser = CreateAppUser(dto, person.Id);
 
@@ -62,7 +62,7 @@ namespace LiBookerWebApi.Services
             if (existingUser != null)
                 return true;
             // using ToLower() for better translation into SQL in EF Core
-            var existingPerson = await this.db.Persons
+            var existingPerson = await _db.Persons
                 .FirstOrDefaultAsync(p => p.Email.ToLower() == loweredEmail, ct);
             return (existingPerson != null);
         }
