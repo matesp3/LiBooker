@@ -1,24 +1,29 @@
-﻿using LiBooker.Shared.DTOs;
+﻿using LiBooker.Shared.ApiResponses;
+using LiBooker.Shared.DTOs;
 using LiBooker.Shared.Roles;
 using LiBookerWebApi.Endpoints.ResultWrappers;
 using LiBookerWebApi.Model;
 using LiBookerWebApi.Models;
+using LiBookerWebApi.Utils;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
+using static LiBookerWebApi.Utils.PersonUploader;
 
 namespace LiBookerWebApi.Services
 {
-    public class AuthService(LiBookerDbContext db) : IAuthService
+    public class AuthService(LiBookerDbContext db, UserManager<ApplicationUser> userManager) : IAuthService
     {
         private readonly LiBookerDbContext _db = db;
+        private readonly UserManager<ApplicationUser> _userManager = userManager;
 
-        public async Task<RegistrationResult> RegisterUserAsync(UserManager<ApplicationUser> userManager, PersonRegistration dto, CancellationToken ct)
+        public async Task<RegistrationResult> RegisterUserAsync(PersonRegistration dto, CancellationToken ct)
         {
             // Transaction launched on the DbContext level - to ensure both Person and ApplicationUser creations are atomic
             using var transaction = await _db.Database.BeginTransactionAsync(ct);
             try
             {
-                var emailTaken = await IsEmailTakenAsync(userManager, dto.Email.ToLower(), ct);
+                var emailTaken = await IsEmailTakenAsync(dto.Email.ToLower(), ct);
                 if (emailTaken)
                     RegistrationResult.EmailAlreadyUsed();
 
@@ -31,7 +36,7 @@ namespace LiBookerWebApi.Services
                 var newUser = CreateAppUser(dto, person.Id);
 
                 // UserManager in EF Core automatically detects existing DB transaction of the DbContext
-                var identityResult = await userManager.CreateAsync(newUser, dto.Password);
+                var identityResult = await _userManager.CreateAsync(newUser, dto.Password);
                 
                 if (!identityResult.Succeeded) // if Identity fails (e.g. weak password)
                 {
@@ -41,7 +46,7 @@ namespace LiBookerWebApi.Services
                     return RegistrationResult.Failure($"Failed to create user: {errors}");
                 }
                 // step 3 - assignment of a default role
-                await userManager.AddToRoleAsync(newUser, UserRolesExtensions.GetRoleName(UserRoles.User));
+                await _userManager.AddToRoleAsync(newUser, UserRolesExtensions.GetRoleName(UserRoles.User));
 
                 // step 4 - OK, commit transaction
                 await transaction.CommitAsync(ct);
@@ -56,9 +61,25 @@ namespace LiBookerWebApi.Services
             }
         }
 
-        private async Task<bool> IsEmailTakenAsync(UserManager<ApplicationUser> userManager, string loweredEmail, CancellationToken ct = default)
+        public async Task<UserInfoResponse?> GetUserInfoAsync(ClaimsPrincipal user)
         {
-            var existingUser = await userManager.FindByEmailAsync(loweredEmail);
+            var appUser = await _userManager.GetUserAsync(user);
+            if (appUser == null)
+                return null;
+
+            var roles = await _userManager.GetRolesAsync(appUser);
+
+            return new UserInfoResponse()
+            {
+                PersonId = appUser?.PersonId,
+                Email = appUser?.Email ?? "Unknown",
+                Roles = [.. roles]
+            };
+        }
+
+        private async Task<bool> IsEmailTakenAsync(string loweredEmail, CancellationToken ct = default)
+        {
+            var existingUser = await _userManager.FindByEmailAsync(loweredEmail);
             if (existingUser != null)
                 return true;
             // using ToLower() for better translation into SQL in EF Core
@@ -90,6 +111,54 @@ namespace LiBookerWebApi.Services
                 PersonId = personId,  // obtained person ID
                 EmailConfirmed = true // if needed, email confirmation can be implemented later
             };
+        }
+
+
+        public async Task<List<UserAccountDto>> CreateUserForPerson(List<UserAccountDto> users, ILogger<Program> logger, CancellationToken token)
+        {
+            int i = 0;
+            var roleName = UserRolesExtensions.GetRoleName(UserRoles.User);
+            var transaction = await _db.Database.BeginTransactionAsync(token).ConfigureAwait(false);
+            foreach (var userDto in users)
+            {
+                var person = _db.Persons.FirstOrDefault(p => p.Id == userDto.PersonId);
+                if (person == null)
+                {
+                    logger.LogError("Person with ID {PersonId} not found for email {Email}", userDto.PersonId, userDto.Email);
+                    await transaction.RollbackAsync(token).ConfigureAwait(false);
+                    return users;
+                }
+                var existingUser = await _userManager.FindByEmailAsync(userDto.Email).ConfigureAwait(false);
+                if (existingUser != null)
+                { // ok.. user is paired with personId
+                    await transaction.RollbackAsync(token).ConfigureAwait(false);
+                    return users;
+                }
+                var newUser = new ApplicationUser
+                {
+                    UserName = userDto.Email,
+                    Email = userDto.Email,
+                    PersonId = userDto.PersonId,
+                    EmailConfirmed = true // if needed, email confirmation can be implemented later
+                };
+                var password = PasswordGenerator.Generate(8); // 8-chars password
+                userDto.Password = password;
+                var result = await _userManager.CreateAsync(newUser, password);
+                if (!result.Succeeded)
+                {
+                    logger.LogError("Failed to create user for email {Email}: {Errors}", userDto.Email, string.Join(", ", result.Errors.Select(e => e.Description)));
+                    //await transaction.RollbackAsync(token).ConfigureAwait(false); // continue with other users
+                    return users;
+                }
+                else
+                {
+                    await _userManager.AddToRoleAsync(newUser, roleName).ConfigureAwait(false);
+                    logger.LogInformation("{i}. Created user for email {Email} with role {roleName}", ++i, userDto.Email, roleName);
+                }
+
+            }
+            transaction.Commit();
+            return users;
         }
     }
 }

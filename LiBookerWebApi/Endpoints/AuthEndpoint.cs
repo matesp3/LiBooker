@@ -28,13 +28,12 @@ namespace LiBookerWebApi.Endpoints
         {
             group.MapPost("/register-extended", async (
                 PersonRegistration dto,
-                UserManager <ApplicationUser> userManager,
                 IAuthService svc,
                 CancellationToken ct = default) =>
             {
                 try
                 {
-                    var result = await svc.RegisterUserAsync(userManager, dto, ct);
+                    var result = await svc.RegisterUserAsync(dto, ct);
 
                     if (!result.IsSuccessful)
                     {
@@ -54,24 +53,15 @@ namespace LiBookerWebApi.Endpoints
         private static void MapUserInfoEndpoint(RouteGroupBuilder group)
         {
             group.MapGet("/user-info", async (
-                ClaimsPrincipal user, UserManager<ApplicationUser> userManager)=>
+                ClaimsPrincipal user, IAuthService svc)=>
             {
                 if (user.Identity?.IsAuthenticated != true)
                 {
                     return Results.Unauthorized();
                 }
+                var info = await svc.GetUserInfoAsync(user);
 
-                var appUser = await userManager.GetUserAsync(user);
-                if (appUser == null) return Results.NotFound();
-
-                var roles = await userManager.GetRolesAsync(appUser);
-
-                return Results.Ok(new UserInfoResponse()
-                {
-                    PersonId = appUser?.PersonId,
-                    Email = appUser?.Email ?? "Unknown",
-                    Roles = [.. roles]
-                });
+                return info is not null ? Results.Ok(info) : Results.NotFound();
             })
             .RequireAuthorization(AuthPolicies.RequireLoggedUser);
         }

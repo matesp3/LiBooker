@@ -1,12 +1,15 @@
-﻿using LiBooker.Shared.DTOs;
+﻿using LiBooker.Shared.ApiResponses;
+using LiBooker.Shared.DTOs;
 using LiBookerWebApi.Endpoints.ResultWrappers;
-using LiBookerWebApi.Models;
-using Microsoft.AspNetCore.Identity;
+using LiBookerWebApi.Utils;
+using System.Security.Claims;
 
 namespace LiBookerWebApi.Services
 {
     public interface IAuthService
     {
-        Task<RegistrationResult> RegisterUserAsync(UserManager<ApplicationUser> userManager, PersonRegistration dto, CancellationToken ct);
+        public Task<List<PersonUploader.UserAccountDto>> CreateUserForPerson(List<PersonUploader.UserAccountDto> users, ILogger<Program> logger, CancellationToken token);
+        public Task<UserInfoResponse?> GetUserInfoAsync(ClaimsPrincipal user);
+        public Task<RegistrationResult> RegisterUserAsync(PersonRegistration dto, CancellationToken ct);
     }
 }
