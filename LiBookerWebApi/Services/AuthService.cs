@@ -119,46 +119,53 @@ namespace LiBookerWebApi.Services
             int i = 0;
             var roleName = UserRolesExtensions.GetRoleName(UserRoles.User);
             var transaction = await _db.Database.BeginTransactionAsync(token).ConfigureAwait(false);
-            foreach (var userDto in users)
+            try
             {
-                var person = _db.Persons.FirstOrDefault(p => p.Id == userDto.PersonId);
-                if (person == null)
+                foreach (var userDto in users)
                 {
-                    logger.LogError("Person with ID {PersonId} not found for email {Email}", userDto.PersonId, userDto.Email);
-                    await transaction.RollbackAsync(token).ConfigureAwait(false);
-                    return users;
-                }
-                var existingUser = await _userManager.FindByEmailAsync(userDto.Email).ConfigureAwait(false);
-                if (existingUser != null)
-                { // ok.. user is paired with personId
-                    await transaction.RollbackAsync(token).ConfigureAwait(false);
-                    return users;
-                }
-                var newUser = new ApplicationUser
-                {
-                    UserName = userDto.Email,
-                    Email = userDto.Email,
-                    PersonId = userDto.PersonId,
-                    EmailConfirmed = true // if needed, email confirmation can be implemented later
-                };
-                var password = PasswordGenerator.Generate(8); // 8-chars password
-                userDto.Password = password;
-                var result = await _userManager.CreateAsync(newUser, password);
-                if (!result.Succeeded)
-                {
-                    logger.LogError("Failed to create user for email {Email}: {Errors}", userDto.Email, string.Join(", ", result.Errors.Select(e => e.Description)));
-                    //await transaction.RollbackAsync(token).ConfigureAwait(false); // continue with other users
-                    return users;
-                }
-                else
-                {
-                    await _userManager.AddToRoleAsync(newUser, roleName).ConfigureAwait(false);
-                    logger.LogInformation("{i}. Created user for email {Email} with role {roleName}", ++i, userDto.Email, roleName);
-                }
+                    var person = _db.Persons.FirstOrDefault(p => p.Id == userDto.PersonId);
+                    if (person == null)
+                    {
+                        logger.LogError("Person with ID {PersonId} not found for email {Email}", userDto.PersonId, userDto.Email);
+                        continue;
+                    }
+                    var existingUser = await _userManager.FindByEmailAsync(userDto.Email).ConfigureAwait(false);
+                    if (existingUser != null)
+                    { // ok.. user is paired with personId
+                        logger.LogWarning("User for email {Email} already exists, skipping creation", userDto.Email);
+                        continue;
+                    }
+                    var newUser = new ApplicationUser
+                    {
+                        UserName = userDto.Email,
+                        Email = userDto.Email,
+                        PersonId = userDto.PersonId,
+                        EmailConfirmed = true // if needed, email confirmation can be implemented later
+                    };
+                    var password = PasswordGenerator.Generate(8); // 8-chars password
+                    userDto.Password = password;
+                    var result = await _userManager.CreateAsync(newUser, password);
+                    if (!result.Succeeded)
+                    {
+                        logger.LogError("Failed to create user for email {Email}: {Errors}", userDto.Email, string.Join(", ", result.Errors.Select(e => e.Description)));
+                        continue;
+                    }
+                    else
+                    {
+                        await _userManager.AddToRoleAsync(newUser, roleName).ConfigureAwait(false);
+                        logger.LogInformation("{i}. Created user for email {Email} with role {roleName}", ++i, userDto.Email, roleName);
+                    }
 
+                }
+                transaction.Commit();
+                return users;
             }
-            transaction.Commit();
-            return users;
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync(token).ConfigureAwait(false);
+                logger.LogError("Exception during user creation: {Message}", ex.Message);
+                return users;
+            }
         }
     }
 }
