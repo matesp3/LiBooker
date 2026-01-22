@@ -126,82 +126,220 @@
 }
 
 /* Modal Dialog Styling */
+/* Modal layout: side-by-side role boxes with center controls */
 .modal-backdrop-custom {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(15, 23, 42, 0.4);
-    backdrop-filter: blur(8px);
+    inset: 0;
+    background: rgba(0,0,0,0.5);
     display: flex;
-    justify-content: center;
     align-items: center;
+    justify-content: center;
     z-index: 2000;
 }
 
 .modal-window {
-    background: #ffffff;
-    border-radius: 20px;
-    border: none;
-    width: 580px;
-    padding: 2rem;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    width: 720px;
+    background: #f7ffff;
+    border-radius: 12px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.25);
+    padding: 1rem;
+    border: 1px solid #d0eaea;
+    font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+.modal-header-custom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.modal-email {
+    font-weight: 700;
+    color: #0b5fa5; /* emphasized email color */
 }
 
 .btn-close-custom {
-    background: #f1f5f9;
-    color: #94a3b8;
+    background: #e74c3c;
+    color: white;
     border: none;
-    border-radius: 50%;
-    width: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    padding: 0.25rem 0.6rem;
+    border-radius: 6px;
     cursor: pointer;
-    transition: all 0.2s;
 }
 
-    .btn-close-custom:hover {
-        background: #e2e8f0;
-        color: #475569;
-    }
+/* Grid: left / center / right */
+.roles-modal-grid {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1rem;
+    align-items: stretch;
+}
 
-/* Role Selection UI */
-.role-list-box {
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
-    border-radius: 12px;
-    min-width: 200px;
-    min-height: 250px;
+.role-box {
+    flex: 1 1 0;
+    border-radius: 10px;
+    background: #f2f8f8;
+    border: 1px solid #e1eff0;
+    display: flex;
+    flex-direction: column;
+    min-height: 240px;
 }
 
 .box-header {
-    background: transparent;
-    padding: 1rem 0.5rem;
-    font-weight: 700;
-    text-transform: lowercase;
-    font-size: 0.8rem;
     text-align: center;
-    color: #94a3b8;
-    border-bottom: 1px solid #f1f5f9;
+    padding: 0.6rem;
+    font-weight: 600;
+    color: #6a7b84;
+    border-bottom: 1px solid #e0ecec;
+    background: linear-gradient(#f8fcfc, #f2f8f8);
 }
 
-.role-badge {
-    border: 1px solid #e2e8f0;
+.box-content {
+    padding: 0.6rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+/* scrollbar area */
+.scrollable {
+    overflow-y: auto;
+    max-height: 300px;
+    padding-right: 0.2rem;
+}
+
+/* Role row item */
+.role-row {
+    padding: 0.5rem 0.75rem;
+    border-radius: 8px;
     background: white;
-    padding: 0.5rem 1rem;
-    border-radius: 10px;
-    margin-bottom: 0.5rem;
-    font-size: 0.85rem;
-    text-align: center;
+    border: 1px solid #e7eef0;
     cursor: pointer;
-    transition: all 0.2s;
+    user-select: none;
+}
+.role-row:hover {
+    background: #eef9f8;
+}
+.role-row.selected {
+    background: #cfeee9;
+    border-color: #7ed3bf;
+    box-shadow: inset 0 1px 0 rgba(0,0,0,0.03);
 }
 
-.role-badge:hover {
-    border-color: #3b82f6;
-    color: #3b82f6;
-    background: #eff6ff;
+/* Controls in the center */
+.transfer-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    align-items: center;
+    justify-content: center;
+    width: 72px;
+}
+
+/* nicer application-colors */
+.arrow-btn {
+    width: 56px;
+    height: 40px;
+    border-radius: 8px;
+    border: none;
+    font-size: 18px;
+    cursor: pointer;
+}
+/* pleasant blue for add */
+.add-btn {
+    background: linear-gradient(180deg, #7fb9f7, #6aaeea);
+    color: white;
+    box-shadow: 0 2px 4px rgba(43,117,196,0.12);
+}
+/* soft coral for remove */
+.remove-btn {
+    background: linear-gradient(180deg, #f5b7b0, #f19a95);
+    color: #7b2b2b;
+    box-shadow: 0 2px 4px rgba(240,120,120,0.10);
+}
+.arrow-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+/* Save / Cancel buttons */
+.btn-save {
+    background: linear-gradient(180deg, #2fa66a, #23894f);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    border: none;
+}
+.btn-save:hover { filter: brightness(0.98); }
+
+.btn-cancel {
+    background: linear-gradient(180deg, #e6f8fb, #d7f0f6); /* subtle app-cool tint */
+    color: #0b5fa5;
+    padding: 0.4rem 0.9rem;
+    border-radius: 8px;
+    border: 1px solid #bde6ee;
+}
+.btn-cancel:hover { filter: brightness(0.98); }
+
+/* modal footer */
+.modal-footer-custom {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+/* Inline modal error with dismiss button */
+.modal-inline-error {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.6rem 2.4rem 0.6rem 0.8rem;
+    border-radius: 6px;
+    margin-top: 0.75rem;
+    background: #fdecea; /* light red bg */
+    color: #7a1f1f;
+    border: 1px solid #f5c6cb;
+}
+
+.modal-inline-error .modal-error-text {
+    flex: 1 1 auto;
+    font-weight: 600;
+}
+
+/* Dismiss icon/button */
+.modal-error-close {
+    position: absolute;
+    right: 0.45rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    border: none;
+    background: #f1b0b7; /* slightly darker red */
+    color: white;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.modal-error-close:hover {
+    filter: brightness(0.93);
+}
+
+/* Loading block in results */
+.results-loading {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 0;
+    color: #4b6b86;
+}
+.results-loading .loading-text {
+    color: #55606a;
+    font-size: 0.95rem;
 }

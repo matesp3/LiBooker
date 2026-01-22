@@ -1,6 +1,5 @@
 ﻿using LiBooker.Shared.DTOs.Admin;
 using LiBookerWasmApp.Services.Clients;
-using LiBookerWasmApp.Utils;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 
@@ -8,144 +7,253 @@ namespace LiBookerWasmApp.Pages.Admin.Components
 {
     public partial class UserSearchInput : IDisposable
     {
-        [Parameter]
-        public EventCallback<string> OnSearchConfirmed { get; set; }
+        [Parameter] public EventCallback<string> OnSearchConfirmed { get; set; }
+        [Parameter] public string Placeholder { get; set; } = "search...";
 
-        [Parameter]
-        public string Placeholder { get; set; } = "search...";
-
-        [Inject]
-        public required UserClient UserClient { get; set; }
+        [Inject] public required UserClient UserClient { get; set; }
 
         private string searchTerm = "";
         private bool showSuggestions = false;
-        private List<UserManagement> suggestions = [];
+        private List<UserManagement> suggestions = new();
         private System.Timers.Timer? debounceTimer;
-        private CancellationTokenSource? searchCts = null;
+        private CancellationTokenSource? searchCts;
+
+        // suppress blur-based confirm when we already fired select or Enter
+        private bool suppressNextBlurConfirm = false;
+
+        // loading indicator for suggestions
+        private bool isLoadingSuggestions = false;
 
         public string SearchTerm
         {
-            get => this.searchTerm;
+            get => searchTerm;
             set
             {
-                if (this.searchTerm != value)
+                if (searchTerm != value)
                 {
-                    this.searchTerm = value;
-                    OnSearchInput(); // Trigger debounce on change
+                    searchTerm = value;
+                    OnSearchInput(); // debounce-driven suggestion fetch
                 }
             }
         }
 
         private void OnSearchInput()
         {
-            // Stop and dispose previous timer to prevent multiple timers running
-            this.debounceTimer?.Stop();
-            this.debounceTimer?.Dispose();
-
-            if (string.IsNullOrWhiteSpace(this.searchTerm))
+            // cancel previous timer
+            try
             {
-                this.suggestions.Clear();
-                this.showSuggestions = false;
+                debounceTimer?.Stop();
+                debounceTimer?.Dispose();
+            }
+            catch { /* ignore */ }
+
+            if (string.IsNullOrWhiteSpace(searchTerm))
+            {
+                // cancel any pending request too (thread-safe)
+                CancelCurrentSearchCts();
+
+                suggestions.Clear();
+                showSuggestions = false;
+                isLoadingSuggestions = false;
+                StateHasChanged();
                 return;
             }
 
-            // Create new timer
-            this.debounceTimer = new System.Timers.Timer(300);
-            this.debounceTimer.AutoReset = false; // Run only once!
-            this.debounceTimer.Elapsed += async (_, _) => 
+            debounceTimer = new System.Timers.Timer(300);
+            debounceTimer.AutoReset = false; // run only once
+            debounceTimer.Elapsed += async (_, _) =>
             {
-                await InvokeAsync(async () => await LoadSuggestions()); 
+                await InvokeAsync(async () => await LoadSuggestionsAsync());
             };
-            this.debounceTimer.Start();
+            debounceTimer.Start();
         }
 
-        private async Task LoadSuggestions()
+        private CancellationTokenSource SwapInNewSearchCts()
         {
-            // cancel previous API request if it's still running
-            this.searchCts?.Cancel();
-            //this.searchCts?.Dispose();
-            this.searchCts = new CancellationTokenSource();
-            var token = this.searchCts.Token;
+            var newCts = new CancellationTokenSource();
+            var prev = Interlocked.Exchange(ref searchCts, newCts);
+            if (prev != null)
+            {
+                try { prev.Cancel(); }
+                catch (ObjectDisposedException) { }
+                catch { }
+
+                try { prev.Dispose(); }
+                catch { }
+            }
+            return newCts;
+        }
+
+        private void CancelCurrentSearchCts()
+        {
+            var prev = Interlocked.Exchange(ref searchCts, null);
+            if (prev != null)
+            {
+                try { prev.Cancel(); }
+                catch (ObjectDisposedException) { }
+                catch { }
+
+                try { prev.Dispose(); }
+                catch { }
+            }
+        }
+
+        private async Task LoadSuggestionsAsync()
+        {
+            // swap in new CTS in a thread-safe manner
+            var cts = SwapInNewSearchCts();
+            var token = cts.Token;
+
+            isLoadingSuggestions = true;
+            StateHasChanged();
+
+            Console.WriteLine($"[UserSearchInput] LoadSuggestionsAsync start for '{searchTerm}' at {DateTime.UtcNow:O}");
 
             try
             {
-                var res = await this.UserClient.SearchUsersByEmailAsync(this.searchTerm, token);
-                
+                var res = await UserClient.SearchUsersByEmailAsync(searchTerm, token);
+                Console.WriteLine($"[UserSearchInput] API returned IsSuccess={res.IsSuccess}, IsCancelled={res.IsCancelled}");
+
                 if (!token.IsCancellationRequested && res.IsSuccess)
                 {
-                    this.suggestions = res.Data?.Take(10).ToList() ?? [];
-                    this.showSuggestions = this.suggestions.Count > 0; // Show only if we have data
-                    StateHasChanged();
+                    // keep suggestions small
+                    suggestions = res.Data?.Take(10).ToList() ?? new List<UserManagement>();
+                    showSuggestions = suggestions.Count > 0;
+                    Console.WriteLine($"[UserSearchInput] suggestions count: {suggestions.Count}");
+                }
+                else
+                {
+                    // if API returned empty or cancelled, clear suggestions
+                    suggestions.Clear();
+                    showSuggestions = false;
                 }
             }
             catch (OperationCanceledException)
             {
-                // Expected behavior when typing fast
+                Console.WriteLine("[UserSearchInput] LoadSuggestionsAsync cancelled");
+                suggestions.Clear();
+                showSuggestions = false;
             }
-            // update only if we actually got results or cleared them.
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[UserSearchInput] LoadSuggestionsAsync exception: {ex}");
+                suggestions.Clear();
+                showSuggestions = false;
+            }
+            finally
+            {
+                isLoadingSuggestions = false;
+                StateHasChanged();
+                Console.WriteLine($"[UserSearchInput] LoadSuggestionsAsync finished for '{searchTerm}'");
+            }
         }
 
         private async Task SelectSuggestion(UserManagement user)
         {
-            this.searchTerm = user.Email;
-            this.showSuggestions = false;
-            if (this.OnSearchConfirmed.HasDelegate)
-            {
-                await this.OnSearchConfirmed.InvokeAsync(this.searchTerm);
-            }
+            // cancel pending suggestion requests to avoid late responses clearing UI
+            CancelCurrentSearchCts();
+
+            // prevent blur from firing an extra confirm
+            suppressNextBlurConfirm = true;
+
+            var trimmed = (user.Email ?? "").Trim();
+            searchTerm = trimmed;
+            showSuggestions = false;
+            suggestions.Clear();
+
+            if (OnSearchConfirmed.HasDelegate)
+                await OnSearchConfirmed.InvokeAsync(trimmed);
+
+            // small delay to make sure blur handler sees suppress flag if it runs
+            await Task.Yield();
+            suppressNextBlurConfirm = false;
         }
 
         private async Task HandleKeyDown(KeyboardEventArgs e)
         {
             if (e.Key == "Enter")
             {
-                this.showSuggestions = false;
-                if (this.OnSearchConfirmed.HasDelegate)
-                {
-                    await this.OnSearchConfirmed.InvokeAsync(this.searchTerm);
-                }
+                // cancel pending suggestion requests to avoid late responses clearing UI
+                CancelCurrentSearchCts();
+
+                // prevent blur-based confirmation duplicate
+                suppressNextBlurConfirm = true;
+
+                showSuggestions = false;
+                suggestions.Clear();
+
+                var trimmed = (searchTerm ?? "").Trim();
+                if (OnSearchConfirmed.HasDelegate)
+                    await OnSearchConfirmed.InvokeAsync(trimmed);
+
+                // small delay to reset suppression
+                await Task.Yield();
+                suppressNextBlurConfirm = false;
             }
         }
 
         private void ClearSearch()
         {
-            this.searchTerm = "";
-            this.showSuggestions = false;
-            if (this.OnSearchConfirmed.HasDelegate) // notify parent that search is cleared
+            // cancel pending ops
+            try
             {
-                this.OnSearchConfirmed.InvokeAsync("");
+                debounceTimer?.Stop();
+                debounceTimer?.Dispose();
             }
+            catch { /* ignore */ }
+
+            CancelCurrentSearchCts();
+
+            searchTerm = "";
+            suggestions.Clear();
+            showSuggestions = false;
+
+            // notify parent to clear results
+            if (OnSearchConfirmed.HasDelegate)
+                _ = OnSearchConfirmed.InvokeAsync("");
+
+            StateHasChanged();
         }
 
-        // Helper for highlighting text
         private MarkupString Highlight(string text)
         {
-            return Highlighter.Highlight(this.searchTerm, text);
+            if (string.IsNullOrEmpty(searchTerm) || string.IsNullOrEmpty(text))
+                return new MarkupString(text ?? "");
+            var pattern = System.Text.RegularExpressions.Regex.Escape(searchTerm);
+            var result = System.Text.RegularExpressions.Regex.Replace(text, $"({pattern})", "<strong>$1</strong>", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            return new MarkupString(result);
         }
 
         private async Task OnSearchBlur()
         {
-            // Give time for click event to register before hiding
-            await Task.Delay(200);
-            this.showSuggestions = false;
-            // Force re-render to hide the dropdown
-            StateHasChanged(); 
+            // allow click on suggestion to register (suggestion click sets suppressNextBlurConfirm)
+            await Task.Delay(160);
+
+            if (suppressNextBlurConfirm)
+            {
+                // reset and do nothing
+                suppressNextBlurConfirm = false;
+                showSuggestions = false;
+                StateHasChanged();
+                return;
+            }
+
+            // IMPORTANT: Do NOT perform full-search on blur anymore.
+            // Just hide suggestions and keep current searchTerm as-is.
+            showSuggestions = false;
+            StateHasChanged();
         }
 
         public void Dispose()
         {
-            this.debounceTimer?.Stop();
-            this.debounceTimer?.Dispose();
-            this.searchCts?.Cancel();
-            //this.searchCts?.Dispose();
             try
             {
-                this.searchCts?.Cancel();
-                //this.searchCts?.Dispose();
+                debounceTimer?.Stop();
+                debounceTimer?.Dispose();
             }
-            catch (ObjectDisposedException)
-            {
-            }
+            catch { /* ignore */ }
+
+            CancelCurrentSearchCts();
         }
     }
 }

@@ -9,6 +9,9 @@
 ::deep .input-group {
     display: flex;
     align-items: center;
+    gap: 0.5rem;
+    position: relative;
+    max-width: 640px;
     background-color: #f8fafc;
     border: 1px solid #cbd5e1;
     border-radius: 25px;
@@ -16,17 +19,17 @@
     transition: all 0.2s ease-in-out;
 }
 
-/* Effect when user clicks inside the search bar */
+/* Focus style */
 ::deep .input-group:focus-within {
     border-color: #3b82f6;
     background-color: #ffffff;
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
-/* TARGETING THE SPECIFIC CLASS ADDED IN RAZOR */
+/* Icon */
 ::deep .input-group-text.search-icon {
     background-color: transparent !important;
-    border: none !important; /* Removes the box border */
+    border: none !important;
     padding-left: 18px;
     padding-right: 0px;
     margin-right: -5px;
@@ -34,30 +37,84 @@
     box-shadow: none !important;
 }
 
+::deep .search-icon {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.4rem;
+    color: #4b6b86;
+    background: transparent;
+    border: none;
+}
+
 /* The actual text input field */
 ::deep .search-input {
-    background-color: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-    outline: none !important;
-    font-family: inherit;
+    flex: 1 1 auto;
+    padding: 0.6rem 3.8rem 0.6rem 0.6rem; /* reserve space for spinner + clear button */
+    border-radius: 18px;
+    border: 2px solid #cfe7fb;
+    box-shadow: none;
+    background: #fff;
+    min-height: 38px;
     font-size: 0.95rem;
     color: #334155;
     padding: 10px 15px 10px 10px;
 }
 
-/* "X" icon to clear search */
-::deep .clear-icon {
-    padding-right: 18px;
-    cursor: pointer;
-    color: #94a3b8;
-    font-size: 0.8rem;
-    transition: color 0.2s;
+/* SVG spinner placed to the right of input, left of clear button */
+::deep .svg-spinner {
+    position: absolute;
+    right: 44px; /* leave room for clear icon at 8px */
+    top: 50%;
+    transform: translateY(-50%);
+    width: 18px;
+    height: 18px;
+    z-index: 12;
+    /* ensure transform rotates around center */
+    transform-origin: center;
+    display: block;
+    pointer-events: none;
+    /* fallback background none */
+    background: transparent;
 }
 
-    ::deep .clear-icon:hover {
-        color: #ef4444;
-    }
+/* Circle stroke style and rotation animation */
+::deep .svg-spinner .path {
+    stroke: #0b5fa5; /* visible accent color */
+    stroke-linecap: round;
+    /* create a gap so it looks like a spinner arc */
+    stroke-dasharray: 90;
+    stroke-dashoffset: 22;
+    opacity: 1;
+}
+
+/* rotate the svg continuously */
+::deep .svg-spinner {
+    animation: spinner-rotate 1s linear infinite;
+}
+
+@keyframes spinner-rotate {
+    to { transform: translateY(-50%) rotate(360deg); }
+}
+
+/* Clear icon button above spinner */
+::deep .clear-icon {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    border: 1px solid #d0d8de;
+    background: #f6f8fa;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #55606a;
+    padding: 0;
+    z-index: 14; /* ensure clear stays above spinner and focus ring */
+}
 
 /* Suggestions Dropdown styling */
 ::deep .suggestions-dropdown {
@@ -65,20 +122,21 @@
     top: calc(100% + 8px);
     left: 0;
     width: 100%;
+    max-width: 640px;
     background: white;
-    border: 1px solid #e2e8f0;
-    border-radius: 12px;
-    z-index: 1000;
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e6eef6;
+    border-radius: 8px;
+    z-index: 1200;
+    box-shadow: 0 6px 20px rgba(32, 48, 74, 0.08);
     overflow: hidden;
 }
 
 ::deep .suggestion-item {
-    padding: 12px 18px;
+    padding: 0.6rem 0.9rem;
     cursor: pointer;
     font-size: 0.9rem;
     color: #475569;
-    border-bottom: 1px solid #f1f5f9;
+    border-bottom: 1px solid #f1f6fb;
     transition: background-color 0.2s;
 }
 
@@ -87,5 +145,13 @@
 }
 
 ::deep .suggestion-item:hover {
-    background-color: #f1f5f9;
+    background-color: #f4fbff;
+}
+
+/* add spinner and loading rows */
+::deep .suggestion-loading-row,
+::deep .suggestion-empty-row {
+    padding: 0.6rem 0.9rem;
+    color: #64748b;
+    font-size: 0.9rem;
 }

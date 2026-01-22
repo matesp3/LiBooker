@@ -35,6 +35,26 @@ namespace LiBookerWasmApp
             // Build host so we can use IJSRuntime
             var host = builder.Build();
 
+            // Global exception handlers: log to browser console immediately
+            AppDomain.CurrentDomain.UnhandledException += (s, e) =>
+            {
+                try
+                {
+                    Console.WriteLine($"[GLOBAL UNHANDLED] {e.ExceptionObject}");
+                }
+                catch { }
+            };
+
+            TaskScheduler.UnobservedTaskException += (s, e) =>
+            {
+                try
+                {
+                    Console.WriteLine($"[UNOBSERVED TASK] {e.Exception}");
+                    e.SetObserved();
+                }
+                catch { }
+            };
+
             // Log to browser console (visible in DevTools -> Console)
             var js = host.Services.GetRequiredService<IJSRuntime>();
             await js.InvokeVoidAsync("console.log", $"Resolved ApiBaseUrl: '{apiBase}'");

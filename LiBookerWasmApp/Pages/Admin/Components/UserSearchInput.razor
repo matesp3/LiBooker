@@ -2,37 +2,62 @@
 @implements IDisposable
 
 <div class="user-search-wrapper">
-    <div class="input-group">
-        @* Added the "search-icon" class here *@
-        <span class="input-group-text search-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-search" viewBox="0 0 16 16">
+    <div class="input-group search-input-group">
+        <span class="input-group-text search-icon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                 <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z" />
             </svg>
         </span>
+
         <input type="text"
                class="form-control search-input"
-               placeholder="@this.Placeholder"
-               @bind="this.SearchTerm"
+               placeholder="@Placeholder"
+               @bind="SearchTerm"
                @bind:event="oninput"
-               @onfocus="() => this.showSuggestions = true"
+               @onfocus="() => showSuggestions = true"
                @onblur="OnSearchBlur"
-               aria-expanded="@(this.showSuggestions ? "true" : "false")"
+               @onkeydown="HandleKeyDown"
                autocomplete="off"
-               @onkeydown="HandleKeyDown" />
-        @if (!string.IsNullOrEmpty(this.searchTerm))
+               aria-label="Search users by email" />
+
+        @* SVG circular spinner for robust, crisp circle shape *@
+        @if (isLoadingSuggestions)
         {
-            <span class="clear-icon" @onclick="ClearSearch">✕</span>
+            <svg class="svg-spinner" viewBox="0 0 50 50" aria-hidden="true" focusable="false">
+                <circle class="path" cx="25" cy="25" r="20" fill="none" stroke-width="4"></circle>
+            </svg>
+        }
+
+        @if (!string.IsNullOrEmpty(SearchTerm))
+        {
+            <button type="button" class="clear-icon" @onclick="ClearSearch" aria-label="Clear search">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
         }
     </div>
 
-    @if (this.showSuggestions)
+    @if (showSuggestions)
     {
-        <div class="suggestions-dropdown">
-            @foreach (var user in this.suggestions)
+        <div class="suggestions-dropdown" role="listbox" aria-label="Search suggestions">
+            @if (isLoadingSuggestions)
             {
-                <div class="suggestion-item" @onclick="() => SelectSuggestion(user)">
-                    @Highlight(user.Email)
-                </div>
+                <div class="suggestion-loading-row">Loading...</div>
+            }
+            else if (suggestions.Count == 0)
+            {
+                <div class="suggestion-empty-row">No quick matches</div>
+            }
+            else
+            {
+                @foreach (var user in suggestions)
+                {
+                    <div class="suggestion-item" role="option" @onclick="() => SelectSuggestion(user)" @ondblclick="() => SelectSuggestion(user)">
+                        @Highlight(user.Email)
+                    </div>
+                }
             }
         </div>
     }

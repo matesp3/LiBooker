@@ -12,7 +12,8 @@ namespace LiBookerWasmApp.Services.Clients
         /// </summary>
         public async Task<ApiResponse<List<UserManagement>>> SearchUsersByEmailAsync(string query, CancellationToken ct = default)
         {
-            var requestUrl = $"api/users/search?email={Uri.EscapeDataString(query)}";
+            var requestUrl = $"api/users/search?email={Uri.EscapeDataString(query ?? string.Empty)}";
+            Console.WriteLine($"[UserClient] GET {requestUrl}");
             return await ApiClient<List<UserManagement>>.GetJsonAsync(requestUrl, _http, ct);
         }
 
