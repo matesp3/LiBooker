@@ -41,7 +41,7 @@ public class Program
         builder.Services.AddScoped<IMatchSearchService, MatchSearchService>();
         builder.Services.AddScoped<IBookService, BookService>();
         builder.Services.AddScoped<IAuthService, AuthService>();
-
+        
 
         var app = builder.Build();
 
@@ -65,6 +65,7 @@ public class Program
         app.MapMatchSearchEndpoint(logDuration);
         app.MapBookEndpoints();
         app.MapRegistrationEndpoints();
+        app.MapUserEndpoints();
 
         if (app.Environment.IsDevelopment())
         {

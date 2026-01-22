@@ -1,0 +1,207 @@
+﻿/* Generic Font */
+.page-title, .search-label, .results-title, .user-table, .modal-window, .page-info {
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+.page-title {
+    color: #1e293b;
+    font-weight: 700;
+    font-size: 1.75rem;
+    margin-bottom: 1rem;
+}
+
+.separator {
+    border: 0;
+    border-top: 1px solid #e2e8f0;
+    margin: 1rem 0;
+}
+
+.separator-light {
+    border: 0;
+    border-top: 1px solid #f1f5f9;
+    margin-bottom: 2rem;
+}
+
+/* Search Layout */
+.search-container {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 1rem 0;
+}
+
+.search-label {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: lowercase;
+}
+
+.search-wrapper {
+    width: 450px;
+    position: relative;
+}
+
+/* Results Table */
+.results-area {
+    margin-top: 1rem;
+}
+
+.results-title {
+    color: #94a3b8;
+    margin-bottom: 1.2rem;
+    font-weight: 500;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+}
+
+.user-table {
+    border-collapse: separate;
+    border-spacing: 0;
+    width: 100%;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+    .user-table th {
+        text-align: left;
+        font-weight: 600;
+        font-size: 0.85rem;
+        text-transform: lowercase;
+        border-bottom: 1px solid #e2e8f0;
+        padding: 1rem;
+        color: #475569;
+        background-color: #f8fafc;
+    }
+
+    .user-table td {
+        vertical-align: middle;
+        border-bottom: 1px solid #f1f5f9;
+        padding: 1rem;
+        font-size: 0.9rem;
+        color: #334155;
+    }
+
+    .user-table tr:last-child td {
+        border-bottom: none;
+    }
+
+.email-col {
+    font-weight: 500;
+    color: #2563eb;
+}
+
+/* Action Button */
+.btn-edit {
+    background-color: #ffffff;
+    color: #2563eb;
+    border: 1px solid #dbeafe;
+    border-radius: 8px;
+    padding: 0.4rem 1rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+    .btn-edit:hover {
+        background-color: #2563eb;
+        color: #ffffff;
+        border-color: #2563eb;
+    }
+
+/* Pagination */
+.pagination-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 1.5rem;
+    padding: 0 0.5rem;
+}
+
+.page-info {
+    font-size: 0.85rem;
+    color: #64748b;
+}
+
+/* Modal Dialog Styling */
+.modal-backdrop-custom {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(15, 23, 42, 0.4);
+    backdrop-filter: blur(8px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+}
+
+.modal-window {
+    background: #ffffff;
+    border-radius: 20px;
+    border: none;
+    width: 580px;
+    padding: 2rem;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+.btn-close-custom {
+    background: #f1f5f9;
+    color: #94a3b8;
+    border: none;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+    .btn-close-custom:hover {
+        background: #e2e8f0;
+        color: #475569;
+    }
+
+/* Role Selection UI */
+.role-list-box {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    min-width: 200px;
+    min-height: 250px;
+}
+
+.box-header {
+    background: transparent;
+    padding: 1rem 0.5rem;
+    font-weight: 700;
+    text-transform: lowercase;
+    font-size: 0.8rem;
+    text-align: center;
+    color: #94a3b8;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.role-badge {
+    border: 1px solid #e2e8f0;
+    background: white;
+    padding: 0.5rem 1rem;
+    border-radius: 10px;
+    margin-bottom: 0.5rem;
+    font-size: 0.85rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.role-badge:hover {
+    border-color: #3b82f6;
+    color: #3b82f6;
+    background: #eff6ff;
+}

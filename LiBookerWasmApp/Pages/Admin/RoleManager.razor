@@ -1,0 +1,138 @@
+﻿@page "/admin/roles"
+@using LiBooker.Shared.DTOs.Admin
+@using LiBookerWasmApp.Pages.Admin.Components
+
+<h3 class="page-title">Roles Administration</h3>
+<hr class="separator" />
+
+<div class="search-container">
+    <label class="search-label">find account:</label>
+    <div class="search-wrapper">
+        <UserSearchInput OnSearchConfirmed="OnSearchRequested" Placeholder="type e-mail" />
+    </div>
+</div>
+
+<hr class="separator-light" />
+
+@if (this.error != null)
+{
+    <div class="alert alert-danger">@this.error</div>
+}
+
+<div class="results-area">
+    <h5 class="results-title">Found matches:</h5>
+
+    @if (this.isLoading)
+    {
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    }
+    else if (this.allLoadedUsers.Count == 0 && !string.IsNullOrEmpty(this.currentSearchTerm))
+    {
+        <p class="text-muted">No users found matching "@this.currentSearchTerm".</p>
+    }
+    else if (this.allLoadedUsers.Count > 0)
+    {
+        <table class="table user-table">
+            <thead>
+                <tr>
+                    <th>Email</th>
+                    <th>Current Roles</th>
+                    <th style="width: 150px;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var user in this.pagedUsers)
+                {
+                    <tr>
+                        <td class="email-col">@user.Email</td>
+                        <td>
+                            @if (user.Roles != null && user.Roles.Any())
+                            {
+                                @string.Join(", ", user.Roles)
+                            }
+                            else
+                            {
+                                <span class="text-muted italic">no roles</span>
+                            }
+                        </td>
+                        <td>
+                            <button class="btn-edit" @onclick="() => OpenEditModal(user)">
+                                edit roles
+                            </button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        <div class="pagination-controls">
+            <span class="page-info">Page @currentPage of @TotalPages</span>
+            <div class="btn-group">
+                <button class="btn btn-outline-secondary btn-sm" @onclick="PrevPage" disabled="@(currentPage == 1)">Previous</button>
+                <button class="btn btn-outline-secondary btn-sm" @onclick="NextPage" disabled="@(currentPage == TotalPages)">Next</button>
+            </div>
+        </div>
+    }
+</div>
+
+@if (isModalOpen && selectedUserForEdit != null)
+{
+    <div class="modal-backdrop-custom">
+        <div class="modal-window">
+            <div class="modal-header-custom">
+                <h4 class="modal-title">Edit Roles: @selectedUserForEdit.Email</h4>
+                <button class="btn-close-custom" @onclick="CloseModal">✕</button>
+            </div>
+
+            <div class="modal-body-custom">
+                <div class="transfer-container">
+                    <div class="role-list-box">
+                        <div class="box-header">available</div>
+                        <div class="box-content">
+                            @foreach (var role in this.editAvailableRoles)
+                            {
+                                <div class="role-badge available" @onclick="() => AddRole(role)">
+                                    @role
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="transfer-controls">
+                        <div class="arrow-indicator">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                <path fill-rule="evenodd" d="M3.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L9.293 8 3.646 2.354a.5.5 0 0 1 0-.708z" />
+                                <path fill-rule="evenodd" d="M7.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L13.293 8 7.646 2.354a.5.5 0 0 1 0-.708z" />
+                            </svg>
+                        </div>
+                        <div class="arrow-indicator">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                <path fill-rule="evenodd" d="M12.354 1.646a.5.5 0 0 0-.708 0l-6 6a.5.5 0 0 0 0 .708l6 6a.5.5 0 0 0 .708-.708L6.707 8l5.647-5.646a.5.5 0 0 0 0-.708z" />
+                                <path fill-rule="evenodd" d="M8.354 1.646a.5.5 0 0 0-.708 0l-6 6a.5.5 0 0 0 0 .708l6 6a.5.5 0 0 0 .708-.708L2.707 8l5.647-5.646a.5.5 0 0 0 0-.708z" />
+                            </svg>
+                        </div>
+                    </div>
+
+                    <div class="role-list-box">
+                        <div class="box-header">assigned</div>
+                        <div class="box-content">
+                            @foreach (var role in this.editAssignedRoles)
+                            {
+                                <div class="role-badge assigned" @onclick="() => RemoveRole(role)">
+                                    @role
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer-custom">
+                <button class="btn btn-link text-secondary" @onclick="CloseModal">Cancel</button>
+                <button class="btn btn-success" @onclick="SaveRolesAsync">Save Changes</button>
+            </div>
+        </div>
+    </div>
+}

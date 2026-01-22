@@ -43,6 +43,11 @@ namespace LiBookerWebApi.Endpoints
                 {
                     return Results.StatusCode(499);
                 }
+                catch (Exception ex)
+                {
+                    _ = ex;
+                    return Results.InternalServerError();
+                }
             }).
             RequireAuthorization(AuthPolicies.RequireLoggedUser)
             .WithName("UpdatePersonWithId");
@@ -64,6 +69,11 @@ namespace LiBookerWebApi.Endpoints
                 catch (OperationCanceledException)
                 {
                     return Results.StatusCode(499);
+                }
+                catch (Exception ex)
+                {
+                    _ = ex;
+                    return Results.InternalServerError();
                 }
             })
             .RequireAuthorization(AuthPolicies.RequireAdmin)
@@ -88,6 +98,11 @@ namespace LiBookerWebApi.Endpoints
                 catch (OperationCanceledException)
                 {
                     return Results.StatusCode(499);
+                }
+                catch (Exception ex)
+                {
+                    _ = ex;
+                    return Results.InternalServerError();
                 }
             })
             .RequireAuthorization(AuthPolicies.RequireLoggedUser)

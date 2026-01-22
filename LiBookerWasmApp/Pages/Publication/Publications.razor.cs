@@ -305,7 +305,7 @@ namespace LiBookerWasmApp.Pages.Publication
         public void Dispose()
         {
             this.publicationsCts?.Cancel();
-            this.publicationsCts?.Dispose();
+            //this.publicationsCts?.Dispose();
         }
     }
 }

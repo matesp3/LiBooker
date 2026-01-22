@@ -1,6 +1,8 @@
 ﻿using LiBooker.Shared.ApiResponses;
 using LiBooker.Shared.DTOs;
+using LiBooker.Shared.DTOs.Admin;
 using LiBooker.Shared.Roles;
+using LiBookerShared.ApiResponses;
 using LiBookerWebApi.Endpoints.ResultWrappers;
 using LiBookerWebApi.Model;
 using LiBookerWebApi.Models;
@@ -63,11 +65,11 @@ namespace LiBookerWebApi.Services
 
         public async Task<UserInfoResponse?> GetUserInfoAsync(ClaimsPrincipal user)
         {
-            var appUser = await _userManager.GetUserAsync(user);
+            var appUser = await _userManager.GetUserAsync(user).ConfigureAwait(false);
             if (appUser == null)
                 return null;
 
-            var roles = await _userManager.GetRolesAsync(appUser);
+            var roles = await _userManager.GetRolesAsync(appUser).ConfigureAwait(false);
 
             return new UserInfoResponse()
             {
@@ -166,6 +168,43 @@ namespace LiBookerWebApi.Services
                 logger.LogError("Exception during user creation: {Message}", ex.Message);
                 return users;
             }
+        }
+
+        public async Task<List<UserManagement>?> FindUsersWithEmailMatchAsync(string query, CancellationToken ct)
+        {
+            var searchTerm = query.ToLower();
+            var usersWithRoles = await _db.Users
+                .Where(u => u.Email != null && u.Email.ToLower().Contains(searchTerm))
+                .Select(u => new UserManagement
+                {
+                    UserId = u.Id,
+                    FullName = _db.Persons
+                        .Where(p => p.Id == u.PersonId)
+                        .Select(p => (p.FirstName ?? "Unknown") + " " + (p.LastName ?? ""))
+                        .FirstOrDefault() ?? "Unknown",
+                    Email = u.Email ?? "Unknown",
+                    RegisteredAt = _db.Persons
+                        .Where(p => p.Id == u.PersonId)
+                        .Select(p => p.RegisteredAt)
+                        .FirstOrDefault(),
+                    Roles = _db.UserRoles
+                        .Where(ur => ur.UserId == u.Id)
+                        .Join(_db.Roles,
+                              ur => ur.RoleId,
+                              r => r.Id,
+                              (ur, r) => r.Name ?? "Unknown")
+                        .ToList()
+                })
+                .Take(100)
+                .ToListAsync(ct)
+                .ConfigureAwait(false);
+
+            return usersWithRoles;
+        }
+
+        public Task<UpdateResponse<UserRolesUpdate>> UpdateUserRolesAsync(UserRolesUpdate dto, CancellationToken ct)
+        {
+            throw new NotImplementedException();
         }
     }
 }

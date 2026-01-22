@@ -34,6 +34,11 @@ namespace LiBookerWebApi.Endpoints
                 {
                     return Results.StatusCode(499);
                 }
+                catch (Exception ex)
+                {
+                    _ = ex;
+                    return Results.InternalServerError();
+                }
             }).WithName("MatchSearch");
         }
     }

@@ -1,9 +1,7 @@
-﻿using LiBooker.Shared.ApiResponses;
-using LiBooker.Shared.DTOs;
+﻿using LiBooker.Shared.DTOs;
 using LiBookerWebApi.Infrastructure;
 using LiBookerWebApi.Models;
 using LiBookerWebApi.Services;
-using Microsoft.AspNetCore.Identity;
 using System.Security.Claims;
 
 namespace LiBookerWebApi.Endpoints
@@ -42,6 +40,10 @@ namespace LiBookerWebApi.Endpoints
 
                     return Results.Ok(new { message = "Registration succesfull" });
                 }
+                catch (OperationCanceledException)
+                {
+                    return Results.StatusCode(499);
+                }
                 catch (Exception ex)
                 {
                     _ = ex;
@@ -55,13 +57,22 @@ namespace LiBookerWebApi.Endpoints
             group.MapGet("/user-info", async (
                 ClaimsPrincipal user, IAuthService svc)=>
             {
-                if (user.Identity?.IsAuthenticated != true)
+                try
                 {
-                    return Results.Unauthorized();
-                }
-                var info = await svc.GetUserInfoAsync(user);
+                    if (user.Identity?.IsAuthenticated != true)
+                    {
+                        return Results.Unauthorized();
+                    }
+                    var info = await svc.GetUserInfoAsync(user);
 
-                return info is not null ? Results.Ok(info) : Results.NotFound();
+                    return info is not null ? Results.Ok(info) : Results.NotFound();
+                }
+                catch (Exception ex)
+                {
+                    _ = ex;
+                    return Results.Problem("Internal Server Error");
+                }
+
             })
             .RequireAuthorization(AuthPolicies.RequireLoggedUser);
         }

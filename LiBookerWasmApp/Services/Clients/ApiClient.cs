@@ -22,7 +22,7 @@ namespace LiBookerWasmApp.Services.Clients
             }
         }
 
-        public static async Task<ApiResponse<T>> PostJsonAsync(string requestedUrl, T content, HttpClient http, CancellationToken ct = default)
+        public static async Task<ApiResponse<T>> PostJsonAsync<P>(string requestedUrl, P content, HttpClient http, CancellationToken ct = default)
         {
             try
             {
@@ -39,7 +39,7 @@ namespace LiBookerWasmApp.Services.Clients
             }
         }
 
-        public static async Task<ApiResponse<T>> PutJsonAsync(string requestedUrl, T content, HttpClient http, CancellationToken ct = default)
+        public static async Task<ApiResponse<T>> PutJsonAsync<P>(string requestedUrl, P content, HttpClient http, CancellationToken ct = default)
         {
             try
             {
@@ -71,6 +71,10 @@ namespace LiBookerWasmApp.Services.Clients
                     }
                     var data = await res.Content.ReadFromJsonAsync<T>(cancellationToken: ct).ConfigureAwait(false);
                     return ApiResponse<T>.Success(data);
+                }
+                if (res.StatusCode == System.Net.HttpStatusCode.NoContent)
+                {
+                    return ApiResponse<T>.Success(default);
                 }
                 if (res.StatusCode == System.Net.HttpStatusCode.NotFound)
                     return ApiResponse<T>.Fail("Not found", (int)res.StatusCode);

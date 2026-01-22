@@ -23,6 +23,13 @@
             </NavLink>
         </div>
         </AuthorizeView>
+        <AuthorizeView Roles="@(UserRolesExtensions.GetRoleName(UserRoles.Admin))">
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="admin/roles">
+                    <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Roles
+                </NavLink>
+            </div>
+        </AuthorizeView>
         <AuthorizeView>
             <div class="nav-item px-3">
                 <NavLink class="nav-link" href="person/details">

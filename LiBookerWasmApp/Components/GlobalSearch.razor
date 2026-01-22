@@ -13,7 +13,7 @@
                    id="globalSearchInput" 
                    class="form-control"
                    placeholder="Search... (Ctrl+K)"
-                   @bind="SearchTerm"
+                   @bind="this.SearchTerm"
                    @bind:event="oninput"
                    @onfocus="() => this.showSearchResults = true"
                    @onblur="OnSearchBlur"

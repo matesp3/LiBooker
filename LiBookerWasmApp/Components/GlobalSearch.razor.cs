@@ -1,5 +1,6 @@
 using LiBooker.Shared.DTOs;
 using LiBookerWasmApp.Services.Clients;
+using LiBookerWasmApp.Utils;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
@@ -41,7 +42,7 @@ namespace LiBookerWasmApp.Components
             this.debounceTimer?.Stop();
             this.debounceTimer?.Dispose();
 
-            if (string.IsNullOrWhiteSpace(searchTerm))
+            if (string.IsNullOrWhiteSpace(this.searchTerm))
             {
                 this.searchResults.Clear();
                 this.showSearchResults = false;
@@ -123,13 +124,7 @@ namespace LiBookerWasmApp.Components
         // Helper for highlighting text
         private MarkupString HighlightText(string text)
         {
-            if (string.IsNullOrEmpty(this.SearchTerm) || string.IsNullOrEmpty(text))
-                return new MarkupString(text);
-
-            var pattern = System.Text.RegularExpressions.Regex.Escape(this.SearchTerm);
-            var result = System.Text.RegularExpressions.Regex.Replace(text, $"({pattern})", "<strong>$1</strong>", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-
-            return new MarkupString(result);
+            return Highlighter.Highlight(this.searchTerm, text);
         }
 
         // Initialize shortcut on first render

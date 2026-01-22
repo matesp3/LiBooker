@@ -125,7 +125,7 @@
     protected override async Task OnInitializedAsync()
     {
         this.cts = new CancellationTokenSource();
-
+        var token = this.cts.Token;
         try
         {
             var authState = await AuthStateProvider.GetAuthenticationStateAsync();
@@ -137,7 +137,7 @@
 
                 if (personIdClaim != null && int.TryParse(personIdClaim.Value, out int personId))
                 {
-                    var response = await this.PersonClient.GetPersonByIdAsync(personId, this.cts.Token);
+                    var response = await this.PersonClient.GetPersonByIdAsync(personId, token);
                     if (response.IsSuccess)
                     {
                         this.person = response.Data;
@@ -205,6 +205,6 @@
     public void Dispose()
     {
         this.cts?.Cancel();
-        this.cts?.Dispose();
+        // this.cts?.Dispose();
     }
 }

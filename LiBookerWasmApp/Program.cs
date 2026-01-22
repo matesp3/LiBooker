@@ -61,6 +61,7 @@ namespace LiBookerWasmApp
             RegisterClientWithOwnMsgHandler<PersonClient>(builder, apiBase);
             RegisterClientWithOwnMsgHandler<PublicationClient>(builder, apiBase);
             RegisterClientWithOwnMsgHandler<BookClient>(builder, apiBase);
+            RegisterClientWithOwnMsgHandler<UserClient>(builder, apiBase);
 
             return apiBase;
 

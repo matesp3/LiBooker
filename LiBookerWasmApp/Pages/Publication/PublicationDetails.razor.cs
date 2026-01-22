@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Components;
 
 namespace LiBookerWasmApp.Pages.Publication
 {
-    public partial class PublicationDetails
+    public partial class PublicationDetails : IDisposable
     {
         [Parameter]
         public int PublicationId { get; set; }
@@ -69,26 +69,36 @@ namespace LiBookerWasmApp.Pages.Publication
         {
             if (this.details == null)
                 return;
-
-            if (this.details.PictureId.HasValue || this.details.PictureId > 0)
+            try
             {
-                int picId = this.details.PictureId.Value;
-                var imgResult = await this.PublicationClient.GetImagesAsync([picId], token);
-                if (imgResult.IsSuccess && imgResult.Data != null && imgResult.Data.Count > 0)
-                    this.rawPicture = imgResult.Data[0].RawImage;
+                if (this.details.PictureId.HasValue || this.details.PictureId > 0)
+                {
+                    int picId = this.details.PictureId.Value;
+                    var imgResult = await this.PublicationClient.GetImagesAsync([picId], token);
+                    if (imgResult.IsSuccess && imgResult.Data != null && imgResult.Data.Count > 0)
+                        this.rawPicture = imgResult.Data[0].RawImage;
+                    else
+                        this.rawPicture = null;
+                }
+                var descResult = await this.BookClient.GetBookDescriptionAsync(this.PublicationId, token);
+
+                if (descResult.IsSuccess)
+                    this.BookDescription = (descResult.Data is not null)
+                        ? (descResult.Data != string.Empty) ? descResult.Data : "Description of the book is not currently available"
+                        : string.Empty;
                 else
-                    this.rawPicture = null;
+                    this.BookDescription = "Not found.";
+
+                StateHasChanged();
             }
-            var descResult = await this.BookClient.GetBookDescriptionAsync(this.PublicationId, token);
+            catch (OperationCanceledException)
+            {
+            }
+        }
 
-            if (descResult.IsSuccess)
-                this.BookDescription = (descResult.Data is not null) 
-                    ? (descResult.Data != string.Empty) ? descResult.Data : "Description of the book is not currently available"
-                    : string.Empty;
-            else
-                this.BookDescription = "Not found.";
-
-            StateHasChanged();
+        public void Dispose()
+        {
+            this.cts?.Cancel();
         }
     }
 }
