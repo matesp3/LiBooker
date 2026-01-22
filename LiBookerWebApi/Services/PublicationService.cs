@@ -1,5 +1,4 @@
 using LiBooker.Shared.DTOs;
-using LiBooker.Shared.DTOs.VasProjekt.Shared.Dtos;
 using LiBookerWebApi.Model;
 using Microsoft.EntityFrameworkCore;
 using System.Diagnostics;
@@ -145,6 +144,7 @@ namespace LiBookerWebApi.Services
 
             var result = rawData.Select(p => new PublicationMainInfo
             {
+                PublicationId = p.Id,
                 Title = p.Title ?? "Unknown",
                 Author = p.Authors != null && p.Authors.Count != 0
                     ? string.Join(", ", p.Authors
@@ -155,8 +155,10 @@ namespace LiBookerWebApi.Services
                 Publication = p.Publication ?? "Unknown",
                 Year = p.Year,
                 ImageId = p.CoverImageId,
-                Image = []
+                Image = [],
             }).ToList();
+
+            await GetCopiesAvailabilityAsync(result, ct);
 
             swTotal?.Stop();
             if (durLoggingEnabled)
@@ -195,6 +197,34 @@ namespace LiBookerWebApi.Services
                 Dimensions = res.Dimensions,
                 Weight = res.Weight
             };
+        }
+
+        /// <summary>
+        /// Updates the AvailableCopies property of each PublicationMainInfo in the provided list.
+        /// </summary>
+        /// <param name="pubs"></param>
+        /// <param name="ct"></param>
+        /// <returns></returns>
+        private async Task GetCopiesAvailabilityAsync(List<PublicationMainInfo> pubs, CancellationToken ct)
+        {
+            var pubIds = pubs.Select(p => p.PublicationId).ToList();
+
+            var amounts = await _db.Copies
+                .Where(c => pubIds.Contains(c.PublicationId)) // only relevant copies
+                .Where(c => !c.Loans!.Any(l => l.ReturnedAt == null)) // only currently loaned out copies are excluded
+                .GroupBy(c => c.PublicationId)
+                .Select(g => new
+                {
+                    PublicationId = g.Key,
+                    AvailableCount = g.Count()
+                })
+                .ToListAsync(ct).ConfigureAwait(false);
+
+            foreach (var pub in pubs)
+            {
+                var availableCount = amounts.FirstOrDefault(a => a.PublicationId == pub.PublicationId)?.AvailableCount ?? 0;
+                pub.AvailableCopies = availableCount;
+            }
         }
 
         private static IQueryable<Models.Entities.Publication> BuildParametrizedQuery(

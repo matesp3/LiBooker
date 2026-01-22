@@ -1,4 +1,3 @@
-using LiBooker.Shared.ApiResponses;
 using LiBooker.Shared.DTOs;
 using LiBookerWebApi.Infrastructure;
 using LiBookerWebApi.Models;

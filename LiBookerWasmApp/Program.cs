@@ -58,19 +58,21 @@ namespace LiBookerWasmApp
             });
 
             // Typed clients: XYZ_Client receives HttpClient via constructor
-            builder.Services.AddHttpClient<PersonClient>(client =>
-            {
-                client.BaseAddress = new Uri(apiBase);
-            })
-            .AddHttpMessageHandler<CustomAuthorizationMessageHandler>(); // important for authorization purpose
-
-            builder.Services.AddHttpClient<PublicationClient>(client =>
-            {
-                client.BaseAddress = new Uri(apiBase);
-            })
-            .AddHttpMessageHandler<CustomAuthorizationMessageHandler>();
+            RegisterClientWithOwnMsgHandler<PersonClient>(builder, apiBase);
+            RegisterClientWithOwnMsgHandler<PublicationClient>(builder, apiBase);
+            RegisterClientWithOwnMsgHandler<BookClient>(builder, apiBase);
 
             return apiBase;
+
+            static void RegisterClientWithOwnMsgHandler<T>(WebAssemblyHostBuilder builder, string apiBase)
+                where T : class, ICustomClient
+            {
+                builder.Services.AddHttpClient<T>(client =>
+                {
+                    client.BaseAddress = new Uri(apiBase);
+                })
+                .AddHttpMessageHandler<CustomAuthorizationMessageHandler>(); // important for authorization purpose
+            }
         }
     }
 }

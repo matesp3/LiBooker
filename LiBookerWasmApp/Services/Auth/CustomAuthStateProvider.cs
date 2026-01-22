@@ -110,7 +110,7 @@ namespace LiBookerWasmApp.Services.Auth
 
         public async Task<SimpleResponse> RegisterAsync(PersonRegistration registerModel)
         {
-            // explicitly defined endpoint due to Person Id
+            // explicitly defined endpoint due to Person PublicationId
             var response = await _httpClient.PostAsJsonAsync("/api/auth/register-extended", registerModel);
             var content = await response.Content.ReadAsStringAsync();
             return new SimpleResponse

@@ -3,6 +3,9 @@ namespace LiBooker.Shared.DTOs
     // DTO representing the main info for a publication
     public class PublicationMainInfo
     {
+        // Publication ID (table 'vydanie', column 'id_vydania')
+        public int PublicationId { get; set; }
+
         // Title of the book (table 'kniha', column 'nazov')
         public required string Title { get; set; }
 
@@ -21,8 +24,9 @@ namespace LiBooker.Shared.DTOs
         // Cover image bytes (table 'titulny_obrazok', column 'obrazok')
         public byte[]? Image { get; set; }
 
-        public bool IsAvailable { get; set; } = false;
-
         public int AvailableCopies { get; set; } = 0;
+
+        public bool IsAvailable { get => this.AvailableCopies > 0; }
+
     }
 }

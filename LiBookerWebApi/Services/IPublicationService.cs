@@ -1,5 +1,4 @@
 using LiBooker.Shared.DTOs;
-using LiBooker.Shared.DTOs.VasProjekt.Shared.Dtos;
 using static LiBooker.Shared.EndpointParams.PublicationParams;
 
 namespace LiBookerWebApi.Services

@@ -29,17 +29,23 @@ namespace LiBookerWasmApp.Pages.Publication
         [SupplyParameterFromQuery]
         public string? SelectedName { get; set; }
 
+        [SupplyParameterFromQuery(Name = "page")]
+        public int Page { get; set; } = 1;
+
+        [SupplyParameterFromQuery(Name = "availability")]
+        public string FilterAvailability { get; set; } = "all";
+
+        [SupplyParameterFromQuery(Name = "sort")]
+        public string FilterSort { get; set; } = "none";
+
         private bool isLoading;
         private bool isLoadingImages;
-        private int currentPage = 1;
         private int imagesLoaded;
         private int totalPublications = -1;
         private int? bookId;
         private int? authorId;
         private int? genreId;
         private string? error = null;
-        private string filterAvailability = "all"; // filter availability state
-        private string filterSort = "none"; // filter sorting state
 
         private List<PublicationMainInfo>? publications;
         private CancellationTokenSource? publicationsCts = null;
@@ -54,28 +60,22 @@ namespace LiBookerWasmApp.Pages.Publication
         // here we respond to query parameter changes
         protected override async Task OnParametersSetAsync()
         {
-            // filters reset before application of query parameters
-            this.bookId = null;
-            this.authorId = null;
+            // Ensure Page is at least 1
+            if (this.Page < 1) this.Page = 1;
+
+            // Logic for pre-selecting filters based on SelectedType...
+            this.bookId = null; 
+            this.authorId = null; 
             this.genreId = null;
-            
+
             if (!string.IsNullOrEmpty(this.SelectedType) && this.SelectedId.HasValue)
             {
                 var type = this.SelectedType.ToLower();
-                if (type == "book")
-                    this.bookId = this.SelectedId.Value;
-                else if (type == "author")
-                    this.authorId = this.SelectedId.Value;
-                else if (type == "genre")
-                    this.genreId = this.SelectedId.Value;
+                if (type == "book") this.bookId = this.SelectedId.Value;
+                else if (type == "author") this.authorId = this.SelectedId.Value;
+                else if (type == "genre") this.genreId = this.SelectedId.Value;
             }
 
-            await LoadPublications(); // always load publications on parameter set
-        }
-
-        private async Task OnFilterChanged()
-        {
-            this.currentPage = 1; 
             await LoadPublications();
         }
 
@@ -90,7 +90,7 @@ namespace LiBookerWasmApp.Pages.Publication
             this.isLoading = true;
             this.error = null;
             this.imagesLoaded = 0;
-            this.publications = null; 
+            this.publications = null;
         }
 
         private async Task LoadPublications()
@@ -103,12 +103,14 @@ namespace LiBookerWasmApp.Pages.Publication
                 _ = LoadPublicationsCountAsync(currentToken); // fire and forget count load
 
                 // load publications WITHOUT imageData (fast - for better UX)
-                var result = await PublicationClient.GetPublicationsAsync(this.currentPage, PageSize,
+                var result = await PublicationClient.GetPublicationsAsync(
+                        this.Page, 
+                        PageSize,
                         this.bookId, this.authorId, this.genreId,
-                        PublicationParams.ParseAvailabilityParam(this.filterAvailability),
-                        PublicationParams.ParseSortParam(this.filterSort),
+                        PublicationParams.ParseAvailabilityParam(this.FilterAvailability),
+                        PublicationParams.ParseSortParam(this.FilterSort),
                         currentToken);
-
+                
                 // if cancelled in the meantime, stop immediately without error
                 if (currentToken.IsCancellationRequested) return;
 
@@ -126,9 +128,7 @@ namespace LiBookerWasmApp.Pages.Publication
                 else
                 {
                     if (!result.IsCancelled) // Check whether this is just a cancellation, or not
-                    {
                         this.error = result.Error;
-                    }
                 }
             }
             catch (OperationCanceledException)
@@ -136,19 +136,15 @@ namespace LiBookerWasmApp.Pages.Publication
                 // CORRECT BEHAVIOR: Do nothing. The user started a new action, 
                 // so the old one being cancelled is expected and NOT an error.
             }
-            catch (Exception ex)
+            catch (Exception ex) // Real error
             {
-               // Real error
                this.error = $"Unexpected error: {ex.Message}";
                this.isLoading = false;
             }
             finally
-            {
-                // Only turn off loading if we are NOT cancelled (if cancelled, new load is taking over)
-                if (!currentToken.IsCancellationRequested)
-                {
-                   // StateHasChanged(); // Optional if needed here, usually handled above
-                }
+            {   // Only turn off loading if we are NOT cancelled (if cancelled, new load is taking over)
+                //if (!currentToken.IsCancellationRequested)
+                   // StateHasChanged(); // Optional if needed here
             }
         }
 
@@ -157,7 +153,7 @@ namespace LiBookerWasmApp.Pages.Publication
             try
             {
                 var result = await PublicationClient.GetPublicationsCountAsync(this.bookId, this.authorId, 
-                    this.genreId, PublicationParams.ParseAvailabilityParam(this.filterAvailability), token);
+                    this.genreId, PublicationParams.ParseAvailabilityParam(this.FilterAvailability), token);
                 if (result.IsSuccess)
                 {
                     this.totalPublications = result.Data;
@@ -232,65 +228,84 @@ namespace LiBookerWasmApp.Pages.Publication
             StateHasChanged(); // Update UI after each batch
         }
 
-        private async Task NextPage()
-        {
-            this.currentPage++;
-            await LoadPublications();
-        }
+        // --- UPDATED NAVIGATION & FILTER METHODS ---
+        // Instead of changing variables directly, we update the URL.
+        // Blazor sees the URL change -> calls OnParametersSetAsync -> calls LoadPublications.
 
-        private async Task PreviousPage()
-        {
-            if (this.currentPage > 1)
-            {
-                this.currentPage--;
-                await LoadPublications();
-            }
-        }
-
-        private async Task FirstPage()
-        {
-            if (this.currentPage > 1)
-            {
-                this.currentPage = 1;
-                await LoadPublications();
-            }
-        }
-
-        private async Task LastPage()
-        {
-            var maxPage = this.TotalPages;
-            if (this.currentPage < maxPage)
-            {
-                this.currentPage = maxPage;
-                await LoadPublications();
-            }
-        }
-        
-        public void Dispose()
-        {
-            this.publicationsCts?.Cancel();
-            this.publicationsCts?.Dispose();
-        }
-
-        private static string GetImageDataUrl(byte[]? imageData)
-        {
-            if (imageData == null || imageData.Length == 0)
-                return string.Empty;
-
-            var base64 = Convert.ToBase64String(imageData);
-            return $"data:image/jpeg;base64,{base64}";
-        }
-
-        // removes filter create by query parameters
         private void ClearActiveFilter()
         {
             this.NavigationManager.NavigateTo("/publications");
         }
 
         // handles navigation to details page
-        private void NavigateToDetails(int publicationId)
+        private void NavigateToDetails(int publicationId, int availableCopies)
         {
-            this.NavigationManager.NavigateTo($"/publication/{publicationId}");
+            this.NavigationManager.NavigateTo($"/publication/{publicationId}?availableCopies={availableCopies}");
+        }
+
+        private void UpdateUrl()
+        {
+            // Helper to construct URL with current state
+            var query = new Dictionary<string, object?>
+            {
+                ["page"] = this.Page.ToString(),
+                ["availability"] = this.FilterAvailability,
+                ["sort"] = this.FilterSort,
+                // Keeping context filters if they exist
+                ["selectedId"] = this.SelectedId?.ToString(),
+                ["selectedType"] = this.SelectedType,
+                ["selectedName"] = this.SelectedName
+            };
+
+            // Removing nulls/defaults to keep URL clean
+            var uri = this.NavigationManager.GetUriWithQueryParameters(query);
+            this.NavigationManager.NavigateTo(uri);
+        }
+
+        private void OnFilterChanged()
+        {
+            this.Page = 1; // Reset to page 1 on filter change
+            UpdateUrl();
+        }
+
+        private void NextPage()
+        {
+            this.Page++;
+            UpdateUrl();
+        }
+
+        private void PreviousPage()
+        {
+            if (this.Page > 1)
+            {
+                this.Page--;
+                UpdateUrl();
+            }
+        }
+
+        private void FirstPage()
+        {
+            if (this.Page > 1)
+            {
+                this.Page = 1;
+                UpdateUrl();
+            }
+        }
+
+        private void LastPage()
+        {
+            var maxPage = this.TotalPages;
+            if (this.Page < maxPage)
+            {
+                this.Page = maxPage;
+                UpdateUrl();
+            }
+        }
+
+        public void Dispose()
+        {
+            this.publicationsCts?.Cancel();
+            this.publicationsCts?.Dispose();
         }
     }
 }

@@ -35,7 +35,7 @@
         
         <div class="filter-group">
             <label class="filter-label">Availability</label>
-            <select class="form-select custom-select" @bind="this.filterAvailability" @bind:after="OnFilterChanged">
+            <select class="form-select custom-select" @bind="this.FilterAvailability" @bind:after="OnFilterChanged">
                 <option value="@(PublicationParams.GetAvailabilityText(PublicationParams.PublicationAvailability.All))">All</option>
                 <option value="@(PublicationParams.GetAvailabilityText(PublicationParams.PublicationAvailability.AvailableOnly))">Available</option>
             </select>
@@ -43,7 +43,7 @@
 
         <div class="filter-group">
             <label class="filter-label">Sort by</label>
-            <select class="form-select custom-select" @bind="this.filterSort" @bind:after="OnFilterChanged">
+            <select class="form-select custom-select" @bind="this.FilterSort" @bind:after="OnFilterChanged">
                 <option value="@(PublicationParams.GetSortingText(PublicationParams.PublicationsSorting.None))">None</option>
                 <option value="@(PublicationParams.GetSortingText(PublicationParams.PublicationsSorting.ByTitleAsc))">Name (A-Z)</option>
                 <option value="@(PublicationParams.GetSortingText(PublicationParams.PublicationsSorting.ByTitleDesc))">Name (Z-A)</option>
@@ -85,13 +85,13 @@ else
             var pub = this.publications[idx];
             <div class="col-md-4 col-sm-6">
                 <!-- Added onclick event here to the card -->
-                <div class="card h-100" @onclick="() => NavigateToDetails((idx+1))">
+                <div class="card h-100" @onclick="(() => NavigateToDetails(pub.PublicationId, pub.AvailableCopies))">
                     
                     <div class="publication-image-container">
                         @* Availability Badge *@
                         @if (pub.IsAvailable)
                         {
-                            <span class="availability-badge badge-available">Available</span>
+                            <span class="availability-badge badge-available">Available (@(pub.AvailableCopies)x)</span>
                         }
                         else
                         {
@@ -99,7 +99,7 @@ else
                         }
 
                         @{
-                            var imageUrl = GetImageDataUrl(pub?.Image);
+                            var imageUrl = Converter.GetImageDataUrl(pub?.Image);
                         }
                         
                         @* Image loading logic ... *@
@@ -140,25 +140,25 @@ else
     </div>
 
     <div class="pagination-container">
-        <button class="btn btn-theme me-1" @onclick="FirstPage" disabled="@(this.currentPage <= 1 || this.isLoading)" 
+        <button class="btn btn-theme me-1" @onclick="FirstPage" disabled="@(this.Page <= 1 || this.isLoading)" 
                 title="First Page" style="padding: 0 10px; min-width: 40px;">
             <span>&laquo;</span>
         </button>
 
-        <button class="btn btn-theme" @onclick="PreviousPage" disabled="@(this.currentPage <= 1 || this.isLoading)">
+        <button class="btn btn-theme" @onclick="PreviousPage" disabled="@(this.Page <= 1 || this.isLoading)">
             <span>‹ Previous</span>
         </button>
         
         <div class="pagination-info mx-2">
-            <span class="current-page">Page @this.currentPage of @this.TotalPages</span>
+            <span class="current-page">Page @this.Page of @this.TotalPages</span>
             <span class="total-items">(@this.totalPublications total publications)</span>
         </div>
         
-        <button class="btn btn-theme" @onclick="NextPage" disabled="@(this.currentPage >= this.TotalPages || this.isLoading)">
+        <button class="btn btn-theme" @onclick="NextPage" disabled="@(this.Page >= this.TotalPages || this.isLoading)">
             <span>Next ›</span>
         </button>
 
-        <button class="btn btn-theme ms-1" @onclick="LastPage" disabled="@(this.currentPage >= this.TotalPages || this.isLoading)" 
+        <button class="btn btn-theme ms-1" @onclick="LastPage" disabled="@(this.Page >= this.TotalPages || this.isLoading)" 
                 title="Last Page" style="padding: 0 10px; min-width: 40px;">
             <span>&raquo;</span>
         </button>

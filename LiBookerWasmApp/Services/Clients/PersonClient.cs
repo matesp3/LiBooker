@@ -3,7 +3,7 @@ using LiBooker.Shared.DTOs;
 
 namespace LiBookerWasmApp.Services.Clients;
 
-public class PersonClient(HttpClient http)
+public class PersonClient(HttpClient http) : ICustomClient
 {
     private readonly HttpClient _http = http;
 

@@ -4,7 +4,7 @@ using static LiBooker.Shared.EndpointParams.PublicationParams;
 
 namespace LiBookerWasmApp.Services.Clients
 {
-    public class PublicationClient(HttpClient http)
+    public class PublicationClient(HttpClient http) : ICustomClient
     {
         private readonly HttpClient _http = http;
 
@@ -31,7 +31,7 @@ namespace LiBookerWasmApp.Services.Clients
         }
 
         /// <summary>
-        /// Retrieves all data for a single publication by its ID.
+        /// Retrieves basic details for a single details specified by its ID.
         /// </summary>
         /// <param name="id"></param>
         /// <param name="ct"></param>
@@ -43,9 +43,9 @@ namespace LiBookerWasmApp.Services.Clients
         }
 
         /// <summary>
-        /// Multiple image retrieval (after initial publication data loading) to avoid long query strings.
+        /// Multiple image retrieval (after initial details data loading) to avoid long query strings.
         /// </summary>
-        /// <param name="imageIds">Image IDs that are cached within publication DTO</param>
+        /// <param name="imageIds">Image IDs that are cached within details DTO</param>
         /// <param name="ct"></param>
         /// <returns></returns>
         public async Task<ApiResponse<List<PublicationImage>>> GetImagesAsync(List<int> imageIds, CancellationToken ct = default)
@@ -69,6 +69,18 @@ namespace LiBookerWasmApp.Services.Clients
                 $"{(genreId.HasValue ? $"genreId={genreId.Value}&" : string.Empty)}" +
                 $"onlyAvailable={(availability == PublicationAvailability.AvailableOnly)}";
             return await ApiClient<int>.GetJsonAsync(requestUrl, _http, ct);
+        }
+
+        /// <summary>
+        /// Retrieves details for specific details identified by its id.
+        /// </summary>
+        /// <param name="publicationId"></param>
+        /// <param name="ct"></param>
+        /// <returns></returns>
+        public async Task<ApiResponse<PublicationDetails?>> GetPublicationDetailsAsync(int publicationId, CancellationToken ct)
+        {
+            string requestUrl = $"/api/publications/details/{publicationId}";
+            return await ApiClient<PublicationDetails?>.GetJsonAsync(requestUrl, _http, ct);
         }
 
         /// <summary>

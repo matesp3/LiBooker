@@ -34,6 +34,7 @@ builder.Services.AddIdentityApiEndpoints<ApplicationUser>()
 builder.Services.AddScoped<IPersonService, PersonService>();
 builder.Services.AddScoped<IPublicationService, PublicationService>();
 builder.Services.AddScoped<IMatchSearchService, MatchSearchService>();
+builder.Services.AddScoped<IBookService, BookService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 
 
@@ -57,6 +58,7 @@ bool logDuration = IsDurationLoggingEnabled(app);
 app.MapPersonEndpoints();
 app.MapPublicationEndpoints(logDuration);
 app.MapMatchSearchEndpoint(logDuration);
+app.MapBookEndpoints();
 app.MapRegistrationEndpoints();
 
 if (app.Environment.IsDevelopment())
