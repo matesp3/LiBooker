@@ -83,7 +83,7 @@ namespace LiBookerWebApi.Services
         {
             int i = 0;
             var roleName = UserRolesExtensions.GetRoleName(UserRoles.User);
-            var transaction = await _db.Database.BeginTransactionAsync(token).ConfigureAwait(false);
+            using var transaction = await _db.Database.BeginTransactionAsync(token).ConfigureAwait(false);
             try
             {
                 foreach (var userDto in users)
@@ -167,7 +167,7 @@ namespace LiBookerWebApi.Services
 
         public async Task<UpdateResponse<UserRolesUpdate>> UpdateUserRolesAsync(UserRolesUpdate dto, CancellationToken ct)
         {
-            var transaction = await _db.Database.BeginTransactionAsync(ct).ConfigureAwait(false);
+            using var transaction = await _db.Database.BeginTransactionAsync(ct).ConfigureAwait(false);
             try
             {
                 var newRoles = await _db.Roles.Where(r => dto.NewRoles.Contains(r.Name ?? ""))

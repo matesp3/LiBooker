@@ -206,7 +206,7 @@ namespace LiBookerWebApi.Model
             {
                 b.ToTable("vypozicanie".ToUpper());
                 b.HasKey(x => x.Id).HasName("pk_vypozicanie".ToUpper());
-                b.Property(x => x.Id).HasColumnName("id_vypozicania".ToUpper());
+                b.Property(x => x.Id).HasColumnName("id_vypozicania".ToUpper()).ValueGeneratedOnAdd(); // Id will be generated in db and then accessible in EF after SaveChanges immediately
                 b.Property(x => x.PersonId).HasColumnName("osoba_id_osoby".ToUpper());
                 b.Property(x => x.CopyId).HasColumnName("vytlacok_id_vytlacka".ToUpper());
                 b.Property(x => x.LoanedAt).HasColumnName("dat_vypozicania".ToUpper());
