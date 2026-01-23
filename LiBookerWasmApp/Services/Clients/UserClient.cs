@@ -13,17 +13,17 @@ namespace LiBookerWasmApp.Services.Clients
         public async Task<ApiResponse<List<UserManagement>>> SearchUsersByEmailAsync(string query, CancellationToken ct = default)
         {
             var requestUrl = $"api/users/search?email={Uri.EscapeDataString(query ?? string.Empty)}";
-            Console.WriteLine($"[UserClient] GET {requestUrl}");
+            //Console.WriteLine($"[UserClient] GET {requestUrl}");
             return await ApiClient<List<UserManagement>>.GetJsonAsync(requestUrl, _http, ct);
         }
 
         /// <summary>
         /// Updates roles for a specific user.
         /// </summary>
-        public async Task<ApiResponse<bool>> UpdateUserRolesAsync(UserRolesUpdate request, CancellationToken ct = default)
+        public async Task<ApiResponse<UserRolesUpdate>> UpdateUserRolesAsync(UserRolesUpdate request, CancellationToken ct = default)
         {
             var requestUrl = "api/users/edit/roles";
-            return await ApiClient<bool>.PutJsonAsync(requestUrl, request, _http, ct);
+            return await ApiClient<UserRolesUpdate>.PutJsonAsync(requestUrl, request, _http, ct);
         }
     }
 }

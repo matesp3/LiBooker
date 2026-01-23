@@ -2,6 +2,7 @@
 {
     public class UserRolesUpdate
     {
+        public required string UserId { get; set; }
         public required string Email { get; set; }
         public required List<string> NewRoles { get; set; }
     }

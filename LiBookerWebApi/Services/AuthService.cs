@@ -79,43 +79,6 @@ namespace LiBookerWebApi.Services
             };
         }
 
-        private async Task<bool> IsEmailTakenAsync(string loweredEmail, CancellationToken ct = default)
-        {
-            var existingUser = await _userManager.FindByEmailAsync(loweredEmail);
-            if (existingUser != null)
-                return true;
-            // using ToLower() for better translation into SQL in EF Core
-            var existingPerson = await _db.Persons
-                .FirstOrDefaultAsync(p => p.Email.ToLower() == loweredEmail, ct);
-            return (existingPerson != null);
-        }
-
-        private static Models.Entities.Person CreatePersonFromDto(PersonRegistration dto)
-        {
-            return new Models.Entities.Person
-            {
-                FirstName = dto.FirstName,
-                LastName = dto.LastName,
-                BirthDate = dto.BirthDate,
-                RegisteredAt = DateTime.Now,
-                Email = dto.Email, // Email ukladáme tak ako prišiel, pre zobrazenie
-                Gender = dto.Gender,
-                Phone = dto.Phone
-            };
-        }
-
-        private static ApplicationUser CreateAppUser(PersonRegistration dto, int personId)
-        {
-            return new ApplicationUser
-            {
-                UserName = dto.Email, // Identity will normalize it automatically into NormalizedUserName
-                Email = dto.Email,    // Identity will normalize it automatically into NormalizedEmail
-                PersonId = personId,  // obtained person ID
-                EmailConfirmed = true // if needed, email confirmation can be implemented later
-            };
-        }
-
-
         public async Task<List<UserAccountDto>> CreateUserForPerson(List<UserAccountDto> users, ILogger<Program> logger, CancellationToken token)
         {
             int i = 0;
@@ -202,9 +165,82 @@ namespace LiBookerWebApi.Services
             return usersWithRoles;
         }
 
-        public Task<UpdateResponse<UserRolesUpdate>> UpdateUserRolesAsync(UserRolesUpdate dto, CancellationToken ct)
+        public async Task<UpdateResponse<UserRolesUpdate>> UpdateUserRolesAsync(UserRolesUpdate dto, CancellationToken ct)
         {
-            throw new NotImplementedException();
+            var transaction = await _db.Database.BeginTransactionAsync(ct).ConfigureAwait(false);
+            try
+            {
+                var newRoles = await _db.Roles.Where(r => dto.NewRoles.Contains(r.Name ?? ""))
+                                             .ToListAsync(ct).ConfigureAwait(false);
+                var currentUserRoles = await _db.UserRoles.Where(u => u.UserId == dto.UserId).ToListAsync(ct).ConfigureAwait(false);
+
+                var targetRoleIds = newRoles.Select(r => r.Id).ToList();
+                var currentRoleIds = currentUserRoles.Select(ur => ur.RoleId).ToList();
+                var rolesToRemove = currentUserRoles
+                    .Where(ur => !targetRoleIds.Contains(ur.RoleId))
+                    .ToList();
+
+                var roleIdsToAdd = targetRoleIds
+                    .Where(id => !currentRoleIds.Contains(id))
+                    .Select(id => new IdentityUserRole<string>
+                    {
+                        UserId = dto.UserId,
+                        RoleId = id
+                    })
+                    .ToList();
+
+                // db operations
+                if (rolesToRemove.Any())
+                    _db.UserRoles.RemoveRange(rolesToRemove);
+
+                if (roleIdsToAdd.Any())
+                    await _db.UserRoles.AddRangeAsync(roleIdsToAdd, ct).ConfigureAwait(false);
+
+                await _db.SaveChangesAsync(ct).ConfigureAwait(false);
+                await transaction.CommitAsync(ct).ConfigureAwait(false);
+                return UpdateResponse<UserRolesUpdate>.Success(dto);
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync(ct).ConfigureAwait(false);
+                return UpdateResponse<UserRolesUpdate>.Failure(ex.Message);
+            }
+        }
+
+        private async Task<bool> IsEmailTakenAsync(string loweredEmail, CancellationToken ct = default)
+        {
+            var existingUser = await _userManager.FindByEmailAsync(loweredEmail);
+            if (existingUser != null)
+                return true;
+            // using ToLower() for better translation into SQL in EF Core
+            var existingPerson = await _db.Persons
+                .FirstOrDefaultAsync(p => p.Email.ToLower() == loweredEmail, ct);
+            return (existingPerson != null);
+        }
+
+        private static Models.Entities.Person CreatePersonFromDto(PersonRegistration dto)
+        {
+            return new Models.Entities.Person
+            {
+                FirstName = dto.FirstName,
+                LastName = dto.LastName,
+                BirthDate = dto.BirthDate,
+                RegisteredAt = DateTime.Now,
+                Email = dto.Email, // Email ukladáme tak ako prišiel, pre zobrazenie
+                Gender = dto.Gender,
+                Phone = dto.Phone
+            };
+        }
+
+        private static ApplicationUser CreateAppUser(PersonRegistration dto, int personId)
+        {
+            return new ApplicationUser
+            {
+                UserName = dto.Email, // Identity will normalize it automatically into NormalizedUserName
+                Email = dto.Email,    // Identity will normalize it automatically into NormalizedEmail
+                PersonId = personId,  // obtained person ID
+                EmailConfirmed = true // if needed, email confirmation can be implemented later
+            };
         }
     }
 }

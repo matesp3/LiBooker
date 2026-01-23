@@ -1,7 +1,10 @@
-﻿using LiBooker.Shared.DTOs.Admin;
+﻿using LiBooker.Blazor.Client.Models;
+using LiBooker.Shared.DTOs.Admin;
 using LiBooker.Shared.Roles;
 using LiBookerWasmApp.Services.Clients;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Authorization;
+using System.Security.Claims;
 
 namespace LiBookerWasmApp.Pages.Admin
 {
@@ -9,6 +12,14 @@ namespace LiBookerWasmApp.Pages.Admin
     {
         [Inject]
         public required UserClient UserClient { get; set; }
+        [Inject]
+        public required AuthenticationStateProvider AuthStateProvider { get; set; }
+
+        [Inject]
+        public required NavigationManager NavigationManager { get; set; }
+
+        [CascadingParameter]
+        private Task<AuthenticationState> AuthenticationStateTask { get; set; } = default!;
 
         // state
         private string currentSearchTerm = "";
@@ -250,6 +261,7 @@ namespace LiBookerWasmApp.Pages.Admin
 
             var request = new UserRolesUpdate
             {
+                UserId = this.selectedUserForEdit.UserId,
                 Email = this.selectedUserForEdit.Email,
                 NewRoles = this.editAssignedRoles
             };
@@ -262,27 +274,12 @@ namespace LiBookerWasmApp.Pages.Admin
             {
                 var result = await this.UserClient.UpdateUserRolesAsync(request, token);
 
-                if (token.IsCancellationRequested)
+                if (token.IsCancellationRequested) // cancelled by user/navigation; do nothing
                 {
-                    // cancelled by user/navigation; do nothing
                     this.isSaving = false;
                     return;
                 }
-
-                if (result.IsSuccess)
-                {
-                    // Update local model to reflect changes immediately
-                    this.selectedUserForEdit.Roles = [.. this.editAssignedRoles];
-                    CloseModal();
-                    StateHasChanged();
-                }
-                else
-                {
-                    // show inline error and keep modal open
-                    this.modalError = result.Error ?? "Failed to save roles.";
-                    this.isSaving = false;
-                    StateHasChanged();
-                }
+                await ProcessRoleChangeResponseAsync(result);
             }
             catch (OperationCanceledException)
             {
@@ -292,6 +289,43 @@ namespace LiBookerWasmApp.Pages.Admin
             catch (Exception ex)
             {
                 this.modalError = $"Unexpected error: {ex.Message}";
+                this.isSaving = false;
+                StateHasChanged();
+            }
+        }
+
+        private async Task ProcessRoleChangeResponseAsync(ApiResponse<UserRolesUpdate> result)
+        {
+            if (result.IsSuccess)
+            {
+                // Update local model to reflect changes immediately
+                this.selectedUserForEdit!.Roles = [.. this.editAssignedRoles];
+                var selectedEmail = this.selectedUserForEdit.Email;
+                CloseModal();
+
+                var state = await this.AuthStateProvider.GetAuthenticationStateAsync();
+                var user = state.User;
+                (var email, var isAdmin) = GetUserState(user);
+
+                bool redirect = false;
+                if (string.Equals(email, selectedEmail, StringComparison.OrdinalIgnoreCase))
+                {
+                    // If the edited user is the current user, refresh auth state
+                    if (this.AuthStateProvider is Services.Auth.CustomAuthStateProvider customAuthProvider)
+                    {
+                        await customAuthProvider.RefreshUserAsync();
+                        redirect = !isAdmin; // was in admin role, but now is OR is not?
+                    }
+                }
+                if (redirect)
+                    this.NavigationManager.NavigateTo("/");
+                else
+                    StateHasChanged();
+            }
+            else
+            {
+                // show inline error and keep modal open
+                this.modalError = result.Error ?? "Failed to save roles.";
                 this.isSaving = false;
                 StateHasChanged();
             }
@@ -406,6 +440,24 @@ namespace LiBookerWasmApp.Pages.Admin
             {
 
             }
+        }
+
+        private static (string email, bool isAdmin) GetUserState(ClaimsPrincipal user)
+        {
+            // Email: try ClaimTypes.Email, then "email", then fallback to Name
+            string? email = user.FindFirst(ClaimTypes.Email)?.Value
+                        ?? user.FindFirst("email")?.Value
+                        ?? user.Identity?.Name;
+
+            // Is in Admin role (use existing helper for the canonical role name)
+            var adminRoleName = UserRolesExtensions.GetRoleName(UserRoles.Admin);
+            bool isAdmin = user.IsInRole(adminRoleName)
+                           || user.HasClaim(c =>
+                                (c.Type == ClaimTypes.Role
+                                 || string.Equals(c.Type, "role", StringComparison.OrdinalIgnoreCase)
+                                 || string.Equals(c.Type, "roles", StringComparison.OrdinalIgnoreCase))
+                                && string.Equals(c.Value, adminRoleName, StringComparison.OrdinalIgnoreCase));
+            return (email ?? string.Empty, isAdmin);
         }
     }
 }
