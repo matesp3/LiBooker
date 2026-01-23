@@ -1,0 +1,146 @@
+﻿@page "/loans/history"
+@using LiBooker.Shared.DTOs
+@using LiBookerWasmApp.Pages.Admin.Components
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+
+<div class="page-container fade-in">
+    @* --- Admin/Librarian Section: Search (render only when canManage is known) --- *@
+    @if (canManage)
+    {
+        <div class="admin-search-section">
+            <div class="search-wrapper">
+                <UserSearchInput OnUserSelected="HandleUserSelected"
+                                 Placeholder="Find user by email..." />
+            </div>
+        </div>
+    }
+
+    @* --- Header --- *@
+    @if (!string.IsNullOrEmpty(currentPersonEmail))
+    {
+        <h3 class="history-title">
+            Loans history for <span class="highlight-email">@currentPersonEmail</span>
+        </h3>
+    }
+    else if (canManage && allLoans.Count == 0 && !isLoading)
+    {
+        <div class="empty-state-hint">Use the search bar above to view a user's history</div>
+    }
+
+    @* --- Content Area --- *@
+    @if (errorMessage != null)
+    {
+        <div class="alert alert-danger mt-3">@errorMessage</div>
+    }
+
+    @if (isLoading)
+    {
+        <div class="loading-spinner">
+            <div class="spinner-border text-primary" role="status"></div>
+            <span>Loading history...</span>
+        </div>
+    }
+    else if (allLoans.Count > 0)
+    {
+        <div class="table-card">
+            <table class="table custom-table">
+                <thead>
+                    <tr>
+                        <th class="col-id">publId</th>
+                        <th>Title</th>
+                        <th>From</th>
+                        <th>To</th>
+                        <th>Returned</th>
+                        <th>Return Status</th>
+                        <AuthorizeView Roles="@($"{UserRolesExtensions.GetRoleName(UserRoles.Admin)}, {UserRolesExtensions.GetRoleName(UserRoles.Librarian)}")">
+                            <th class="col-actions">Actions</th>
+                        </AuthorizeView>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var loan in pagedLoans)
+                    {
+                        <tr>
+                            <td class="col-id">#@loan.PublicationId</td>
+                            <td class="fw-medium">@loan.BookTitle</td>
+                            <td>@loan.DateFrom.ToShortDateString()</td>
+                            <td>@loan.DateTo.ToShortDateString()</td>
+                            <td>@(loan.ReturnDate?.ToShortDateString() ?? "-")</td>
+                            <td>
+                                <span class="status-badge @GetStatusClass(loan)">
+                                    @loan.ReturnedDescription
+                                </span>
+                            </td>
+                            <AuthorizeView Roles="@($"{UserRolesExtensions.GetRoleName(UserRoles.Admin)}, {UserRolesExtensions.GetRoleName(UserRoles.Librarian)}")">
+                                <td>
+                                    @if (loan.ReturnDate == null)
+                                    {
+                                        <button class="btn-return" @onclick="() => RequestReturn(loan)">
+                                            return
+                                        </button>
+                                    }
+                                </td>
+                            </AuthorizeView>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @if (TotalPages > 1)
+        {
+            <div class="pagination-area">
+                <button class="btn-page" disabled="@(currentPage == 1)" @onclick="PrevPage">Prev</button>
+                <span class="page-count">@currentPage of @TotalPages</span>
+                <button class="btn-page" disabled="@(currentPage == TotalPages)" @onclick="NextPage">Next</button>
+            </div>
+        }
+    }
+    else if (!string.IsNullOrEmpty(currentPersonEmail) && !isLoading)
+    {
+        <div class="empty-state">No loans found for this user.</div>
+    }
+</div>
+
+@* --- Modal Dialog --- *@
+@if (showReturnModal)
+{
+    <div class="modal-backdrop-custom">
+        <div class="modal-dialog-custom slide-down">
+            <div class="modal-content-custom">
+                <div class="modal-header">
+                    <h5>Confirm Return</h5>
+                </div>
+                <div class="modal-body">
+                    <p>Do you really want to return this publication copy?</p>
+                    <div class="modal-book-info">
+                        <strong>@loanToReturn?.BookTitle</strong>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-modal-cancel" @onclick="CloseModal" disabled="@isProcessingReturn">Cancel</button>
+                    <button class="btn-modal-confirm" @onclick="ConfirmReturnAsync" disabled="@isProcessingReturn">
+                        @if (isProcessingReturn)
+                        {
+                            <span class="spinner-border spinner-border-sm"></span> 
+                        }
+                        else
+                        {
+                            <span>Yes, Return</span>
+                        }
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private string GetStatusClass(LoanInfo loan) => loan.ReturnedDescription switch
+    {
+        "overdue" => "status-overdue",
+        "on time" => "status-ontime",
+        "not returned" => "status-active",
+        _ => ""
+    };
+}

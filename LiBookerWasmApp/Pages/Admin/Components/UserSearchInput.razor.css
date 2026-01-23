@@ -121,37 +121,53 @@
     position: absolute;
     top: calc(100% + 8px);
     left: 0;
-    width: 100%;
-    max-width: 640px;
-    background: white;
-    border: 1px solid #e6eef6;
+    right: 0;
+    z-index: 9999; /* high enough to be above cards/modals */
+    background: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.08);
     border-radius: 8px;
-    z-index: 1200;
-    box-shadow: 0 6px 20px rgba(32, 48, 74, 0.08);
-    overflow: hidden;
+    box-shadow: 0 8px 24px rgba(15, 15, 15, 0.08);
+    max-height: 320px;
+    overflow-y: auto;
+    padding: 6px 0;
+    -webkit-overflow-scrolling: touch;
+    display: block;
 }
 
 ::deep .suggestion-item {
-    padding: 0.6rem 0.9rem;
+    padding: 10px 14px;
     cursor: pointer;
-    font-size: 0.9rem;
-    color: #475569;
-    border-bottom: 1px solid #f1f6fb;
-    transition: background-color 0.2s;
+    color: #222;
+    font-size: 0.95rem;
+    transition: background-color 0.12s ease, color 0.12s ease;
+    user-select: none;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
-::deep .suggestion-item:last-child {
-    border-bottom: none;
+::deep .suggestion-item:hover,
+::deep .suggestion-item:focus {
+    background-color: #f5f7fb;
+    outline: none;
 }
 
-::deep .suggestion-item:hover {
-    background-color: #f4fbff;
-}
-
-/* add spinner and loading rows */
+/* Empty / loading rows */
 ::deep .suggestion-loading-row,
 ::deep .suggestion-empty-row {
-    padding: 0.6rem 0.9rem;
-    color: #64748b;
+    padding: 10px 14px;
+    color: #666;
     font-size: 0.9rem;
+}
+
+/* Highlighted fragment inside suggestion: keep markup strong readable */
+::deep .suggestion-item strong {
+    font-weight: 700;
+    background: transparent;
+}
+
+/* Small responsive tweak so dropdown width matches input on narrow screens */
+@media (max-width: 520px) {
+    .user-search-wrapper { width: 100%; }
+    .suggestions-dropdown { left: 0; right: 0; }
 }

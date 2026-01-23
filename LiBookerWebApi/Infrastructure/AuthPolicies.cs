@@ -6,6 +6,7 @@ namespace LiBookerWebApi.Infrastructure;
 public static class AuthPolicies
 {
     public const string RequireLoggedUser = "RequireLoggedUser";
-    public const string RequireBlogger = "RequireBlogger";
+    public const string RequireLibrarian = "RequireLibrarian";
     public const string RequireAdmin = "RequireAdmin";
+    public const string RequireAdminOrLibrarian = "RequireAdminOrLibrarian";
 }

@@ -140,6 +140,7 @@ namespace LiBookerWebApi.Services
                 .Where(u => u.Email != null && u.Email.ToLower().Contains(searchTerm))
                 .Select(u => new UserManagement
                 {
+                    PersonId = u.PersonId,
                     UserId = u.Id,
                     FullName = _db.Persons
                         .Where(p => p.Id == u.PersonId)

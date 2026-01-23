@@ -7,6 +7,7 @@ using LiBookerWebApi.Models;
 using LiBookerWebApi.Services;
 using LiBookerWebApi.Utils;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Options;
 
 public class Program
 {
@@ -18,8 +19,9 @@ public class Program
         builder.Services.AddSwaggerGen();
         builder.Services.AddAuthorizationBuilder()
             .AddPolicy(AuthPolicies.RequireLoggedUser, policy => policy.RequireRole(UserRoles.User.GetRoleName()))
-            .AddPolicy(AuthPolicies.RequireBlogger, policy => policy.RequireRole(UserRoles.Blogger.GetRoleName()))
-            .AddPolicy(AuthPolicies.RequireAdmin, policy => policy.RequireRole(UserRoles.Admin.GetRoleName()));
+            .AddPolicy(AuthPolicies.RequireLibrarian, policy => policy.RequireRole(UserRoles.Librarian.GetRoleName()))
+            .AddPolicy(AuthPolicies.RequireAdmin, policy => policy.RequireRole(UserRoles.Admin.GetRoleName()))
+            .AddPolicy(AuthPolicies.RequireAdminOrLibrarian, policy =>policy.RequireRole(UserRoles.Admin.GetRoleName(), UserRoles.Librarian.GetRoleName()));
 
         string corsPolicy = string.Empty;
         if (builder.Environment.IsDevelopment())

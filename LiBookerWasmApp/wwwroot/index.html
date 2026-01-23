@@ -71,17 +71,17 @@
 
     <script>
         window.clipboardCopy = {
-            copyText: function(text) {
+            copyText: function (text) {
                 navigator.clipboard.writeText(text).then(function () {
                     // Success
                 })
-                .catch(function (error) {
-                    console.error("Error copying text: ", error);
-                });
+                    .catch(function (error) {
+                        console.error("Error copying text: ", error);
+                    });
             }
         };
     </script>
-
+    <script src="js/userSearchInput.js"></script>
     <script src="_framework/blazor.webassembly.js"></script>
 </body>
 

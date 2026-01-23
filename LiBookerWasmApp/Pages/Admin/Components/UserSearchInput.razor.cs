@@ -2,36 +2,49 @@
 using LiBookerWasmApp.Services.Clients;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
+using Microsoft.JSInterop;
 
 namespace LiBookerWasmApp.Pages.Admin.Components
 {
     public partial class UserSearchInput : IDisposable
     {
+        /// <summary>
+        /// Fired when a search is confirmed via Enter or suggestion selection (using the email string).
+        /// Maintains compatibility with search-based pages (e.g. RoleManager).
+        /// </summary>
         [Parameter] public EventCallback<string> OnSearchConfirmed { get; set; }
+
+        /// <summary>
+        /// Fired when a specific user suggestion is selected.
+        /// Provides the full UserManagement object for pages that need rich data (id, roles, etc.).
+        /// </summary>
+        [Parameter] public EventCallback<UserManagement> OnUserSelected { get; set; }
+
         [Parameter] public string Placeholder { get; set; } = "search...";
 
         [Inject] public required UserClient UserClient { get; set; }
+        [Inject] public required IJSRuntime JS { get; set; }
 
         private string searchTerm = "";
         private bool showSuggestions = false;
         private List<UserManagement> suggestions = new();
         private System.Timers.Timer? debounceTimer;
         private CancellationTokenSource? searchCts;
-
-        // suppress blur-based confirm when we already fired select or Enter
+        private bool isLoadingSuggestions = false;
         private bool suppressNextBlurConfirm = false;
 
-        // loading indicator for suggestions
-        private bool isLoadingSuggestions = false;
+        // ids for DOM elements used by JS positioning
+        private readonly string InputId = $"usersearch_input_{Guid.NewGuid():N}";
+        private readonly string DropdownId = $"usersearch_dropdown_{Guid.NewGuid():N}";
 
         public string SearchTerm
         {
-            get => searchTerm;
+            get => this.searchTerm;
             set
             {
-                if (searchTerm != value)
+                if (this.searchTerm != value)
                 {
-                    searchTerm = value;
+                    this.searchTerm = value;
                     OnSearchInput(); // debounce-driven suggestion fetch
                 }
             }
@@ -42,8 +55,8 @@ namespace LiBookerWasmApp.Pages.Admin.Components
             // cancel previous timer
             try
             {
-                debounceTimer?.Stop();
-                debounceTimer?.Dispose();
+                this.debounceTimer?.Stop();
+                this.debounceTimer?.Dispose();
             }
             catch { /* ignore */ }
 
@@ -52,26 +65,26 @@ namespace LiBookerWasmApp.Pages.Admin.Components
                 // cancel any pending request too (thread-safe)
                 CancelCurrentSearchCts();
 
-                suggestions.Clear();
-                showSuggestions = false;
-                isLoadingSuggestions = false;
+                this.suggestions.Clear();
+                this.showSuggestions = false;
+                this.isLoadingSuggestions = false;
                 StateHasChanged();
                 return;
             }
 
-            debounceTimer = new System.Timers.Timer(300);
-            debounceTimer.AutoReset = false; // run only once
-            debounceTimer.Elapsed += async (_, _) =>
+            this.debounceTimer = new System.Timers.Timer(300);
+            this.debounceTimer.AutoReset = false; // run only once
+            this.debounceTimer.Elapsed += async (_, _) =>
             {
                 await InvokeAsync(async () => await LoadSuggestionsAsync());
             };
-            debounceTimer.Start();
+            this.debounceTimer.Start();
         }
 
         private CancellationTokenSource SwapInNewSearchCts()
         {
             var newCts = new CancellationTokenSource();
-            var prev = Interlocked.Exchange(ref searchCts, newCts);
+            var prev = Interlocked.Exchange(ref this.searchCts, newCts);
             if (prev != null)
             {
                 try { prev.Cancel(); }
@@ -86,7 +99,7 @@ namespace LiBookerWasmApp.Pages.Admin.Components
 
         private void CancelCurrentSearchCts()
         {
-            var prev = Interlocked.Exchange(ref searchCts, null);
+            var prev = Interlocked.Exchange(ref this.searchCts, null);
             if (prev != null)
             {
                 try { prev.Cancel(); }
@@ -100,51 +113,61 @@ namespace LiBookerWasmApp.Pages.Admin.Components
 
         private async Task LoadSuggestionsAsync()
         {
-            // swap in new CTS in a thread-safe manner
             var cts = SwapInNewSearchCts();
             var token = cts.Token;
 
-            isLoadingSuggestions = true;
+            this.isLoadingSuggestions = true;
             StateHasChanged();
-
-            Console.WriteLine($"[UserSearchInput] LoadSuggestionsAsync start for '{searchTerm}' at {DateTime.UtcNow:O}");
 
             try
             {
-                var res = await UserClient.SearchUsersByEmailAsync(searchTerm, token);
-                Console.WriteLine($"[UserSearchInput] API returned IsSuccess={res.IsSuccess}, IsCancelled={res.IsCancelled}");
+                var res = await UserClient.SearchUsersByEmailAsync(this.searchTerm, token);
 
                 if (!token.IsCancellationRequested && res.IsSuccess)
                 {
-                    // keep suggestions small
-                    suggestions = res.Data?.Take(10).ToList() ?? new List<UserManagement>();
-                    showSuggestions = suggestions.Count > 0;
-                    Console.WriteLine($"[UserSearchInput] suggestions count: {suggestions.Count}");
+                    this.suggestions = res.Data?.Take(10).ToList() ?? new List<UserManagement>();
+                    this.showSuggestions = this.suggestions.Count > 0;
                 }
                 else
                 {
-                    // if API returned empty or cancelled, clear suggestions
-                    suggestions.Clear();
-                    showSuggestions = false;
+                    this.suggestions.Clear();
+                    this.showSuggestions = false;
                 }
             }
             catch (OperationCanceledException)
             {
-                Console.WriteLine("[UserSearchInput] LoadSuggestionsAsync cancelled");
-                suggestions.Clear();
-                showSuggestions = false;
+                this.suggestions.Clear();
+                this.showSuggestions = false;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                Console.WriteLine($"[UserSearchInput] LoadSuggestionsAsync exception: {ex}");
-                suggestions.Clear();
-                showSuggestions = false;
+                this.suggestions.Clear();
+                this.showSuggestions = false;
             }
             finally
             {
-                isLoadingSuggestions = false;
+                this.isLoadingSuggestions = false;
                 StateHasChanged();
-                Console.WriteLine($"[UserSearchInput] LoadSuggestionsAsync finished for '{searchTerm}'");
+
+                // Position dropdown in viewport if visible
+                if (this.showSuggestions)
+                {
+                    try
+                    {
+                        // call JS to position dropdown
+                        await JS.InvokeVoidAsync("userSearch.setDropdownPosition", DropdownId, InputId);
+                    }
+                    catch { /* ignore interop errors for robustness */ }
+                }
+                else
+                {
+                    // cleanup inline styles if hidden
+                    try
+                    {
+                        await JS.InvokeVoidAsync("userSearch.hideDropdownInlineStyles", DropdownId);
+                    }
+                    catch { /* ignore */ }
+                }
             }
         }
 
@@ -154,19 +177,24 @@ namespace LiBookerWasmApp.Pages.Admin.Components
             CancelCurrentSearchCts();
 
             // prevent blur from firing an extra confirm
-            suppressNextBlurConfirm = true;
+            this.suppressNextBlurConfirm = true;
 
             var trimmed = (user.Email ?? "").Trim();
-            searchTerm = trimmed;
-            showSuggestions = false;
-            suggestions.Clear();
+            this.searchTerm = trimmed;
+            this.showSuggestions = false;
+            this.suggestions.Clear();
 
-            if (OnSearchConfirmed.HasDelegate)
-                await OnSearchConfirmed.InvokeAsync(trimmed);
+            // 1. Invoke the richer event first (for usages requiring the object)
+            if (this.OnUserSelected.HasDelegate)
+                await this.OnUserSelected.InvokeAsync(user);
+
+            // 2. Invoke the string compatibility event (for RoleManager or search-based usages)
+            if (this.OnSearchConfirmed.HasDelegate)
+                await this.OnSearchConfirmed.InvokeAsync(trimmed);
 
             // small delay to make sure blur handler sees suppress flag if it runs
             await Task.Yield();
-            suppressNextBlurConfirm = false;
+            this.suppressNextBlurConfirm = false;
         }
 
         private async Task HandleKeyDown(KeyboardEventArgs e)
@@ -177,18 +205,19 @@ namespace LiBookerWasmApp.Pages.Admin.Components
                 CancelCurrentSearchCts();
 
                 // prevent blur-based confirmation duplicate
-                suppressNextBlurConfirm = true;
+                this.suppressNextBlurConfirm = true;
 
-                showSuggestions = false;
-                suggestions.Clear();
+                this.showSuggestions = false;
+                this.suggestions.Clear();
 
                 var trimmed = (searchTerm ?? "").Trim();
-                if (OnSearchConfirmed.HasDelegate)
-                    await OnSearchConfirmed.InvokeAsync(trimmed);
+                
+                if (this.OnSearchConfirmed.HasDelegate)
+                    await this.OnSearchConfirmed.InvokeAsync(trimmed);
 
                 // small delay to reset suppression
                 await Task.Yield();
-                suppressNextBlurConfirm = false;
+                this.suppressNextBlurConfirm = false;
             }
         }
 
@@ -197,20 +226,20 @@ namespace LiBookerWasmApp.Pages.Admin.Components
             // cancel pending ops
             try
             {
-                debounceTimer?.Stop();
-                debounceTimer?.Dispose();
+                this.debounceTimer?.Stop();
+                this.debounceTimer?.Dispose();
             }
             catch { /* ignore */ }
 
             CancelCurrentSearchCts();
 
-            searchTerm = "";
-            suggestions.Clear();
-            showSuggestions = false;
+            this.searchTerm = "";
+            this.suggestions.Clear();
+            this.showSuggestions = false;
 
             // notify parent to clear results
-            if (OnSearchConfirmed.HasDelegate)
-                _ = OnSearchConfirmed.InvokeAsync("");
+            if (this.OnSearchConfirmed.HasDelegate)
+                _ = this.OnSearchConfirmed.InvokeAsync("");
 
             StateHasChanged();
         }
@@ -229,30 +258,41 @@ namespace LiBookerWasmApp.Pages.Admin.Components
             // allow click on suggestion to register (suggestion click sets suppressNextBlurConfirm)
             await Task.Delay(160);
 
-            if (suppressNextBlurConfirm)
+            if (this.suppressNextBlurConfirm)
             {
-                // reset and do nothing
-                suppressNextBlurConfirm = false;
-                showSuggestions = false;
+                // Reset suppression and do not forcibly hide suggestions here.
+                // Let click/select handlers take care of hiding when appropriate.
+                this.suppressNextBlurConfirm = false;
                 StateHasChanged();
                 return;
             }
 
-            // IMPORTANT: Do NOT perform full-search on blur anymore.
-            // Just hide suggestions and keep current searchTerm as-is.
-            showSuggestions = false;
+            if (this.suggestions != null && this.suggestions.Count > 0)
+            {
+                // keep visible and re-position
+                this.showSuggestions = true;
+                StateHasChanged();
+                try
+                {
+                    await JS.InvokeVoidAsync("userSearch.setDropdownPosition", DropdownId, InputId);
+                }
+                catch { }
+                return;
+            }
+
+            this.showSuggestions = false;
             StateHasChanged();
+
+            try
+            {
+                await JS.InvokeVoidAsync("userSearch.hideDropdownInlineStyles", DropdownId);
+            }
+            catch { }
         }
 
         public void Dispose()
         {
-            try
-            {
-                debounceTimer?.Stop();
-                debounceTimer?.Dispose();
-            }
-            catch { /* ignore */ }
-
+            try { debounceTimer?.Stop(); debounceTimer?.Dispose(); } catch { }
             CancelCurrentSearchCts();
         }
     }

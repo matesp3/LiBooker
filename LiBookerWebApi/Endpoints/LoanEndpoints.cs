@@ -45,7 +45,7 @@ namespace LiBookerWebApi.Endpoints
                     return Results.InternalServerError();
                 }
             })
-            .RequireAuthorization(AuthPolicies.RequireAdmin)
+            .RequireAuthorization(AuthPolicies.RequireLibrarian)
             .WithName("AddNewLoan");
         }
 
@@ -74,7 +74,7 @@ namespace LiBookerWebApi.Endpoints
                     return Results.InternalServerError();
                 }
             })
-            .RequireAuthorization(AuthPolicies.RequireAdmin)
+            .RequireAuthorization(AuthPolicies.RequireLibrarian)
             .WithName("EditLoan");
         }
 

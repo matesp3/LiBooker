@@ -62,7 +62,7 @@ namespace LiBookerWebApi.Endpoints
                     return Results.InternalServerError();
                 }
             })
-            .RequireAuthorization(AuthPolicies.RequireAdmin)
+            .RequireAuthorization(AuthPolicies.RequireAdminOrLibrarian)
             .WithName("FindUsersWithEmailMatch");
         }
     }

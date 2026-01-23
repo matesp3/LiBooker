@@ -9,7 +9,7 @@
             </svg>
         </span>
 
-        <input type="text"
+        <input id="@InputId" type="text"
                class="form-control search-input"
                placeholder="@Placeholder"
                @bind="SearchTerm"
@@ -41,7 +41,7 @@
 
     @if (showSuggestions)
     {
-        <div class="suggestions-dropdown" role="listbox" aria-label="Search suggestions">
+        <div id="@DropdownId" class="suggestions-dropdown" role="listbox" aria-label="Search suggestions">
             @if (isLoadingSuggestions)
             {
                 <div class="suggestion-loading-row">Loading...</div>
@@ -54,8 +54,12 @@
             {
                 @foreach (var user in suggestions)
                 {
-                    <div class="suggestion-item" role="option" @onclick="() => SelectSuggestion(user)" @ondblclick="() => SelectSuggestion(user)">
-                        @Highlight(user.Email)
+                    <div class="suggestion-item"
+                         role="option"
+                         @onmousedown="() => suppressNextBlurConfirm = true"
+                         @onclick="() => SelectSuggestion(user)"
+                         @ondblclick="() => SelectSuggestion(user)">
+                        @((MarkupString)Highlight(user.Email))
                     </div>
                 }
             }
