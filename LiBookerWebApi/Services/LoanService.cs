@@ -2,6 +2,7 @@
 using LiBookerWebApi.Model;
 using LiBookerWebApi.Models.Entities;
 using Microsoft.EntityFrameworkCore;
+using System.Data;
 
 
 namespace LiBookerWebApi.Services
@@ -25,15 +26,20 @@ namespace LiBookerWebApi.Services
                 if (availableCopyId is null)
                     return null;
 
-                var newLoan = new Loan
-                {   // Id will be selected from sequence in trigger
+                //var nextLoanId = await GetNextLoanIdAsync(ct).ConfigureAwait(false);
+                int? nextLoanId = await GetNextSequenceValueAsync("VYPOZICANIE_SEQ");
+                //Console.WriteLine($"RETRIEVED LOAN ID = {nextLoanId}");
+                var newLoan = new LoanEf
+                {
+                    Id = nextLoanId ?? -1,
                     PersonId = dto.PersonId,
                     CopyId = availableCopyId.Id,
                     LoanedAt = DateTime.Now,
-                    DueAt = DateTime.Now.AddDays(MaxDaysLoaned)
+                    DueAt = DateTime.Now.AddDays(MaxDaysLoaned),
+                    FineId = null
                 };
 
-                await _db.Loans.AddAsync(newLoan, ct).ConfigureAwait(false);
+                await _db.LoansEf.AddAsync(newLoan, ct).ConfigureAwait(false);
                 await _db.SaveChangesAsync(ct).ConfigureAwait(false);
 
                 var bookTitle = await _db.Publications
@@ -41,6 +47,7 @@ namespace LiBookerWebApi.Services
                         .Select(p => p.Book.Title)
                         .FirstOrDefaultAsync(ct).ConfigureAwait(false);
 
+                await transaction.CommitAsync(ct).ConfigureAwait(false);
                 return new LoanInfo
                 {
                     LoanId = newLoan.Id,
@@ -54,6 +61,7 @@ namespace LiBookerWebApi.Services
             catch (Exception ex)
             {
                 _ = ex;
+                Console.WriteLine(ex.Message);
                 await transaction.RollbackAsync(ct);
                 return null;
             }
@@ -90,6 +98,31 @@ namespace LiBookerWebApi.Services
                 .ToListAsync(ct)
                 .ConfigureAwait(false);
             return results;
+        }
+
+        private async Task<int> GetNextLoanIdAsync(CancellationToken ct)
+        {
+            return await _db.Database
+                .SqlQueryRaw<int>("SELECT VYPOZICANIE_SEQ.NEXTVAL FROM DUAL")
+                .SingleAsync(ct);
+        }
+
+        public async Task<int?> GetNextSequenceValueAsync(string sequenceName)
+        {
+            using (var command = _db.Database.GetDbConnection().CreateCommand())
+            {
+                if (command == null || command.Connection == null)
+                    return null;
+                // SQL musí byť čo najjednoduchšie
+                command.CommandText = $"SELECT {sequenceName}.NEXTVAL FROM DUAL";
+                command.CommandType = CommandType.Text;
+
+                if (command.Connection.State != ConnectionState.Open)
+                    await command!.Connection!.OpenAsync();
+
+                var result = await command.ExecuteScalarAsync();
+                return Convert.ToInt32(result);
+            }
         }
     }
 }

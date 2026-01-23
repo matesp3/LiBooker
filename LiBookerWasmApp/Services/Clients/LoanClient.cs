@@ -17,12 +17,21 @@ namespace LiBookerWasmApp.Services.Clients
         }
 
         /// <summary>
-        /// Updates loan details.
+        /// Updates loan details (used here specifically for setting ReturnDate/Returning).
         /// </summary>
         public async Task<ApiResponse<LoanInfo>> UpdateLoanAsync(LoanInfo loan, CancellationToken ct = default)
         {
             var requestUrl = "api/loans/loan/edit/dates";
             return await ApiClient<LoanInfo>.PutJsonAsync(requestUrl, loan, _http, ct);
+        }
+
+        /// <summary>
+        /// Creates a new loan/reservation request.
+        /// </summary>
+        public async Task<ApiResponse<LoanInfo>> CreateLoanRequestAsync(LoanRequest request, CancellationToken ct = default)
+        {
+            var requestUrl = "api/loans/loan/new";
+            return await ApiClient<LoanInfo>.PostJsonAsync(requestUrl, request, _http, ct);
         }
     }
 }

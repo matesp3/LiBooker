@@ -27,6 +27,7 @@ namespace LiBookerWebApi.Model
         public DbSet<Copy> Copies => Set<Copy>();
         public DbSet<Reservation> Reservations => Set<Reservation>();
         public DbSet<Loan> Loans => Set<Loan>();
+        public DbSet<LoanEf> LoansEf => Set<LoanEf>();
         public DbSet<Fine> Fines => Set<Fine>();
         public DbSet<PublicationDetails> PublicationDetails => Set<PublicationDetails>();
 
@@ -217,6 +218,19 @@ namespace LiBookerWebApi.Model
                 b.HasOne(x => x.Person).WithMany(p => p.Loans).HasForeignKey(x => x.PersonId).OnDelete(DeleteBehavior.Restrict);
                 b.HasOne(x => x.Copy).WithMany(c => c.Loans).HasForeignKey(x => x.CopyId).OnDelete(DeleteBehavior.Cascade);
                 b.HasOne(x => x.Fine).WithMany(f => f.Loans).HasForeignKey(x => x.FineId).OnDelete(DeleteBehavior.SetNull);
+            });
+
+            modelBuilder.Entity<LoanEf>(b =>
+            {
+                b.ToTable("V_VYPOZICANIE_EF".ToUpper());
+                b.HasKey(x => x.Id).HasName("pk_v_vypozicanie".ToUpper());
+                b.Property(x => x.Id).HasColumnName("id_vypozicania".ToUpper()).ValueGeneratedNever(); // .ValueGeneratedOnAdd(); // Id will be generated in db and then accessible in EF after SaveChanges immediately
+                b.Property(x => x.PersonId).HasColumnName("osoba_id_osoby".ToUpper());
+                b.Property(x => x.CopyId).HasColumnName("vytlacok_id_vytlacka".ToUpper());
+                b.Property(x => x.LoanedAt).HasColumnName("dat_vypozicania".ToUpper());
+                b.Property(x => x.DueAt).HasColumnName("dat_konca_vypoz".ToUpper());
+                b.Property(x => x.ReturnedAt).HasColumnName("dat_vratenia".ToUpper());
+                b.Property(x => x.FineId).HasColumnName("pokuta_id".ToUpper());
             });
 
             // table 'pokuta'

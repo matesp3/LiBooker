@@ -1,0 +1,70 @@
+﻿@using LiBooker.Shared.DTOs
+@using LiBooker.Shared.DTOs.Admin
+@using LiBookerWasmApp.Pages.Admin.Components
+
+@if (IsOpen)
+{
+    <div class="modal-backdrop-custom" @onclick="CloseModal">
+        <div class="modal-dialog-custom slide-down" @onclick:stopPropagation>
+            <div class="modal-content-custom">
+                
+                @* --- Header --- *@
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        Add reservation for <span class="text-primary">@Publication?.BookTitle</span>
+                    </h5>
+                    <button class="btn-close-custom" title="Close" @onclick="CloseModal">✕</button>
+                </div>
+
+                @* --- Body --- *@
+                <div class="modal-body p-4">
+                    <p class="text-muted mb-3">
+                        Please select a user to create a reservation for this copy (ID: <strong>@Publication?.PublicationId</strong>).
+                    </p>
+
+                    @* Search Component *@
+                    <div class="mb-4">
+                        <UserSearchInput OnUserSelected="HandleUserSelected" 
+                                         Placeholder="Search user by email..." />
+                    </div>
+
+                    @* Selected User Preview *@
+                    @if (selectedUser != null)
+                    {
+                        <div class="selected-user-card p-3 bg-light border rounded-3">
+                            <div class="fw-bold text-dark">@selectedUser.FullName</div>
+                            <div class="small text-secondary">@selectedUser.Email</div>
+                            <div class="small text-secondary mt-1">Person ID: @selectedUser.PersonId</div>
+                        </div>
+                    }
+
+                    @* Error Message *@
+                    @if (!string.IsNullOrEmpty(error))
+                    {
+                        <div class="alert alert-danger mt-3 mb-0">@error</div>
+                    }
+                </div>
+
+                @* --- Footer --- *@
+                <div class="modal-footer">
+                    <button class="btn btn-secondary me-2" @onclick="CloseModal" disabled="@isSaving">Close</button>
+                    <button class="btn btn-primary" @onclick="CreateReservationAsync" disabled="@IsAddDisabled">
+                        @if (isSaving)
+                        {
+                            <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                            <span>Creating...</span>
+                        }
+                        else
+                        {
+                            <span>Add Reservation</span>
+                        }
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+
+}

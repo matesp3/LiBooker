@@ -1,6 +1,10 @@
-﻿@page "/publication/{publicationId:int}"
+﻿@page "/publications/{publicationId:int}"
+@page "/publication/{publicationId:int}"
+@using LiBooker.Shared.DTOs
+@using LiBooker.Shared.Roles
+@using LiBookerWasmApp.Pages.Publication.Components
 
-<div class="container mt-5 mb-5 fade-in">
+<div class="publication-detail-container">
     @if (this.IsLoading)
     {
         <div class="d-flex justify-content-center align-items-center" style="min-height: 400px;">
@@ -22,6 +26,7 @@
             <div class="col-lg-5">
                 <div class="image-box">
                     @{
+
                         var imgUrl = Converter.GetImageDataUrl(this.rawPicture);
                     }
                     @if (!string.IsNullOrEmpty(imgUrl))
@@ -46,7 +51,7 @@
                     <p class="pub-authors">
                         <span class="label">authors:</span> @this.details.AuthorFullNames
                     </p>
-                    
+
                     <div class="pub-description mt-4">
                         <p>@(this.BookDescription)</p>
                     </div>
@@ -91,13 +96,19 @@
                         <div class="badge-status status-available">
                             Available
                         </div>
-                        <button class="btn btn-reserve">
-                            RESERVE
-                        </button>
+
+                        <AuthorizeView Roles="@($"{UserRolesExtensions.GetRoleName(UserRoles.Admin)}, {UserRolesExtensions.GetRoleName(UserRoles.Librarian)}")">
+                            <Authorized>
+                                <button class="btn btn-reserve" @onclick="OpenReserveModal">RESERVE</button>
+                            </Authorized>
+                            <NotAuthorized>
+                                <button class="btn btn-reserve" disabled>RESERVE</button>
+                            </NotAuthorized>
+                        </AuthorizeView>
                     }
                     else
                     {
-                         <div class="badge-status status-unavailable">
+                        <div class="badge-status status-unavailable">
                             Unavailable
                         </div>
                         <button class="btn btn-reserve" disabled>
@@ -110,6 +121,7 @@
     }
 </div>
 
-@code {
-
-}
+@* Modal Component Instance (unchanged) *@
+<AddReservationModal Publication="@publication"
+                     @bind-IsOpen="isReserveModalOpen"
+                     OnReservationSuccess="OnReservationCreated" />
